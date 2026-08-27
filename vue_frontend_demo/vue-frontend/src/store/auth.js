@@ -1,16 +1,13 @@
 import { reactive, computed } from 'vue'
-import { exchangeCode, getMe, loginWithPassword } from '@/api/auth.js'
+import { exchangeCode, getMe } from '@/api/auth.js'
 import { TOKEN_KEY, USER_KEY } from '@/api/index.js'
 
 // 실제 세션 저장소. accessToken은 새로고침에도 살아남도록 sessionStorage에 보관한다.
-//   loginAndAuthorize() -> POST /login (앱 화면에서 자격증명 제출) + GET /oauth2/authorize (리다이렉트)
+//   buildAuthorizeUrl() -> LoginView 가 인가 요청으로 진입할 때 쓰는 URL
 //   startLogin()    -> GET /oauth2/authorize (auth-server로 리다이렉트, 호스팅된 로그인 화면이 필요할 때만)
 //   completeLogin() -> POST /oauth2/token (콜백에서 인가 코드 교환) + GET /api/users/me
 //   register        -> POST /api/users/register (RegisterView에서 호출)
 
-// 자격증명이 틀렸음을 나타내는 전용 에러. LoginView는 이 에러만 인라인 메시지로 처리하고,
-// 그 외 에러(네트워크 문제 등)는 그대로 전파한다.
-export class CredentialError extends Error {}
 
 const CLIENT_ID = import.meta.env.VITE_CLIENT_ID
 const REDIRECT_URI = import.meta.env.VITE_REDIRECT_URI
@@ -44,10 +41,10 @@ function setUser(userData) {
 // authorize 요청 URL 구성. redirect_uri(REDIRECT_URI)는 auth-server에 등록된 client와
 // 정확히 일치해야 하므로 절대 URL(.env의 VITE_REDIRECT_URI) 그대로 둔다. 반면 요청을 보내는
 // 경로 자체는 상대 경로로 둬서 nginx가 프론트(:3000)와 동일 출처로 프록시하게 한다.
-// startLogin()과 loginAndAuthorize() 둘 다 이 URL로 이동시킨다 - 인가 코드 발급 방식 자체는
-// 동일하고, 그 전에 세션(JSESSIONID)을 앱 화면에서 만드느냐 auth-server의 호스팅된 로그인
-// 화면에서 만드느냐만 다르다.
-function buildAuthorizeUrl() {
+// 로그인 진입점. 이 URL 로 보내면 auth-server 가 인가 요청을 세션에 저장한 뒤
+// /login 으로 돌려보내는데, nginx 가 GET /login 에 SPA 를 서빙하므로 사용자는
+// auth-server 의 폼이 아니라 우리 로그인 화면을 보게 된다.
+export function buildAuthorizeUrl() {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: CLIENT_ID,
@@ -58,7 +55,7 @@ function buildAuthorizeUrl() {
 }
 
 // auth-server의 인가 코드 흐름 시작 (호스팅된 로그인 화면으로 이동). 지금은 LoginView가
-// 앱 내 폼(loginAndAuthorize)을 쓰지만, 필요하면 여전히 유효한 진입점이라 남겨둔다.
+// 헤더 등에서 곧바로 로그인 흐름을 시작할 때 쓴다.
 export function startLogin() {
   window.location.href = buildAuthorizeUrl()
 }
@@ -76,16 +73,6 @@ export function startLogin() {
 //
 // responseURL이 비어 있거나 읽을 수 없으면 추측하지 않고 authorize로 진행시킨다 - 정상
 // 로그인을 "비밀번호 오류"로 잘못 판정하는 것이 이전의 미탐지보다 더 나쁘다.
-export async function loginAndAuthorize(email, password) {
-  const res = await loginWithPassword(email, password)
-  const finalUrl = res?.request?.responseURL || ''
-
-  if (finalUrl.includes('login?error') || finalUrl.includes('error=')) {
-    throw new CredentialError('이메일 또는 비밀번호가 올바르지 않습니다.')
-  }
-
-  window.location.href = buildAuthorizeUrl()
-}
 
 // 콜백에서 받은 인가 코드를 토큰으로 교환하고, 내 정보를 조회해 세션을 채운다.
 export async function completeLogin(code) {

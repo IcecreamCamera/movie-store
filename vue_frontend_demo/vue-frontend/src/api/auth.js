@@ -29,26 +29,6 @@ export function exchangeCode(code) {
 // auth-server(:8080)의 폼 로그인 엔드포인트에 자격증명을 제출해 세션 쿠키(JSESSIONID)를 만든다.
 // 공용 api 인스턴스를 쓰지 않는 이유: 그 인스턴스는 Content-Type을 JSON으로 고정하고
 // Authorization: Bearer 헤더를 자동으로 붙이는데, 둘 다 이 요청에는 맞지 않는다.
-// Spring Security의 폼 로그인 필터는 application/x-www-form-urlencoded 바디의
-// username/password 파라미터만 읽으며, 필드명은 이메일을 담더라도 반드시 "username"이어야 한다.
-//
-// 상대 경로(/login)로 요청한다: nginx가 이 경로를 api-gateway로 프록시해 프론트(:3000)와
-// 동일 출처를 유지하기 때문에, 302 리다이렉트 체인을 브라우저가 따라가는 동안에도
-// Origin이 null이 되어 CORS에 막히는 일이 없다. 이 덕분에 체인의 최종 URL
-// (response.request.responseURL)을 읽어 성공/실패를 판정할 수 있다 - 판정은 호출부(store)에서 한다.
-//
-// maxRedirects/validateStatus는 Node용 axios 옵션이라 브라우저에서는 아무 효과가 없으므로
-// 지정하지 않는다 - 브라우저가 302 체인을 정상적으로 따라가게 둔다.
-export function loginWithPassword(email, password) {
-  return axios.post(
-    '/login',
-    new URLSearchParams({ username: email, password }).toString(),
-    {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      withCredentials: true
-    }
-  )
-}
 
 // 내 정보 조회 (게이트웨이가 토큰에서 뽑은 X-User-Id로 사용자를 식별)
 export function getMe() {
