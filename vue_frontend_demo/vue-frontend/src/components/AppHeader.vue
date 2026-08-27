@@ -1,6 +1,7 @@
 <template>
   <header class="bg-black/95 backdrop-blur-sm sticky top-0 z-50 border-b border-gray-800">
-    <div class="max-w-7xl mx-auto px-8 lg:px-16">
+    <!-- 아이콘을 창 오른쪽 끝에 붙이려고 바 내용은 전체 폭을 쓴다. 로고 위치는 기존과 동일. -->
+    <div class="w-full pl-8 lg:pl-16 pr-6 lg:pr-8">
       <div class="flex items-center gap-6 lg:gap-8 h-20">
         <!-- 로고 -->
         <div class="flex items-center shrink-0">
@@ -34,7 +35,7 @@
             <BaseInput
               v-model="searchQuery"
               type="text"
-              placeholder="영화 제목, 감독, 배우를 검색하세요"
+              placeholder="영화를 검색하세요"
               class="pl-10 bg-gray-900/50 border-gray-700 focus:border-brand text-white placeholder:text-white/50"
               @keydown.enter="submitSearch"
             />
@@ -42,7 +43,7 @@
         </div>
 
         <!-- 사용자 메뉴 -->
-        <div class="flex items-center gap-2 shrink-0">
+        <div class="flex items-center gap-2 shrink-0 ml-auto">
           <BaseButton variant="ghost" size="icon">
             <Bell class="h-5 w-5 text-white/80 hover:text-white" />
           </BaseButton>

@@ -26,12 +26,12 @@
             </div>
           </div>
 
-          <div class="flex items-center justify-center gap-12">
+          <div class="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-6 lg:gap-12">
             <!-- 1위 영화 -->
             <div class="group cursor-pointer text-center" @click="openMovie(topMovie)">
               <div class="relative mb-4">
                 <div
-                  class="w-48 h-64 rounded-xl overflow-hidden shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-105"
+                  class="w-40 lg:w-48 h-56 lg:h-64 rounded-xl overflow-hidden shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-105"
                 >
                   <ImageWithFallback
                     :src="topMovie.poster"
@@ -81,7 +81,7 @@
               <p class="text-dim mb-3">대결</p>
 
               <!-- 투표 진행률 표시 -->
-              <div class="w-40 bg-surface-2 rounded-full h-4 mb-2">
+              <div class="w-32 lg:w-40 bg-surface-2 rounded-full h-4 mb-2">
                 <div
                   class="bg-gradient-to-r from-yellow-400 to-yellow-500 h-4 rounded-full transition-all duration-300"
                   :style="{ width: topMoviePercentage + '%' }"
@@ -94,7 +94,7 @@
             <div class="group cursor-pointer text-center" @click="openMovie(secondMovie)">
               <div class="relative mb-4">
                 <div
-                  class="w-48 h-64 rounded-xl overflow-hidden shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-105"
+                  class="w-40 lg:w-48 h-56 lg:h-64 rounded-xl overflow-hidden shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-105"
                 >
                   <ImageWithFallback
                     :src="secondMovie.poster"
