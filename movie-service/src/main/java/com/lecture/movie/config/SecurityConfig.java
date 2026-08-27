@@ -53,11 +53,9 @@ public class SecurityConfig {
 //                     "/swagger-ui.html"
 //                 ).permitAll()
 //                 // 강의 목록/상세 조회는 인증 불필요
-//                 .requestMatchers(HttpMethod.GET, "/api/courses", "/api/courses/**").permitAll()
+//                 .requestMatchers(HttpMethod.GET, "/api/movies", "/api/movies/**").permitAll()
 //                 // 내부 서비스 호출 (Client Credentials)
-//                 .requestMatchers("/api/courses/internal/**").hasAuthority("SCOPE_service.read")
-//                 // 강의 등록은 INSTRUCTOR만
-//                 .requestMatchers(HttpMethod.POST, "/api/courses").hasAuthority("ROLE_INSTRUCTOR")
+//                 .requestMatchers("/api/movies/internal/**").hasAuthority("SCOPE_service.read")
 //                 .anyRequest().authenticated()
 //             )
 //             .oauth2ResourceServer(oauth2 -> oauth2
