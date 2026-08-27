@@ -7,9 +7,44 @@ const routes = [
     component: () => import('@/views/HomeView.vue')
   },
   {
+    path: '/booking',
+    name: 'Booking',
+    component: () => import('@/views/MovieListView.vue')
+  },
+  {
+    path: '/search',
+    name: 'Search',
+    component: () => import('@/views/MovieListView.vue')
+  },
+  {
     path: '/ranking',
     name: 'Ranking',
     component: () => import('@/views/RankingView.vue')
+  },
+  {
+    path: '/snacks',
+    name: 'Snacks',
+    component: () => import('@/views/SnacksView.vue')
+  },
+  {
+    path: '/payments',
+    name: 'Payments',
+    component: () => import('@/views/PaymentsView.vue')
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/LoginView.vue')
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/RegisterView.vue')
+  },
+  {
+    path: '/mypage',
+    name: 'MyPage',
+    component: () => import('@/views/MyPageView.vue')
   },
   {
     path: '/movies/:id',

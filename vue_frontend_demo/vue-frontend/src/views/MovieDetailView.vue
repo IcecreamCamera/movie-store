@@ -8,9 +8,9 @@
       <div class="max-w-7xl mx-auto px-8 lg:px-16 py-6">
         <div class="flex items-center gap-3">
           <Film class="h-6 w-6 text-brand" />
-          <h1 class="text-2xl font-bold text-foreground">영화 상세정보</h1>
+          <h1 class="text-2xl font-bold text-foreground">{{ movie.title }}</h1>
         </div>
-        <p class="text-dim mt-2">{{ movie.title }}의 상세 정보를 확인하세요</p>
+        <p class="text-dim mt-2">줄거리와 출연진을 보고, 마음에 들면 바로 예매하세요.</p>
       </div>
     </div>
 
@@ -79,6 +79,45 @@
                   <h3 class="text-lg font-semibold text-foreground mb-3">줄거리</h3>
                   <p class="text-dim leading-relaxed">{{ movie.description || DEFAULT_PLOT }}</p>
                 </div>
+
+                <!-- 예매 -->
+                <div class="rounded-xl bg-surface-2 border border-hairline p-5">
+                  <div class="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                      <span class="block text-sm text-faint mb-2">매수</span>
+                      <div class="flex items-center gap-3">
+                        <button
+                          class="w-9 h-9 rounded-full border border-hairline text-foreground hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                          :disabled="quantity <= 1"
+                          aria-label="매수 줄이기"
+                          @click="quantity--"
+                        >−</button>
+                        <span class="w-8 text-center text-lg font-semibold text-foreground">{{ quantity }}</span>
+                        <button
+                          class="w-9 h-9 rounded-full border border-hairline text-foreground hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                          :disabled="quantity >= 8"
+                          aria-label="매수 늘리기"
+                          @click="quantity++"
+                        >+</button>
+                      </div>
+                    </div>
+
+                    <div class="text-right">
+                      <span class="block text-sm text-faint mb-1">
+                        {{ TICKET_PRICE.toLocaleString() }}원 × {{ quantity }}
+                      </span>
+                      <span class="text-2xl font-bold text-brand">{{ amount.toLocaleString() }}원</span>
+                    </div>
+                  </div>
+
+                  <BaseButton
+                    class="w-full mt-5 bg-brand text-[#1A1408] hover:bg-brand-hover font-semibold py-3 h-auto text-lg"
+                    @click="book"
+                  >
+                    <Ticket class="h-5 w-5 mr-2" />
+                    예매하기
+                  </BaseButton>
+                </div>
               </div>
             </div>
 
@@ -101,6 +140,60 @@
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- 관람평 -->
+          <div class="bg-surface rounded-2xl p-8 shadow-lg border border-hairline">
+            <div class="flex items-center gap-3 mb-6">
+              <Star class="h-6 w-6 text-brand" />
+              <h2 class="text-2xl font-bold text-foreground">관람평</h2>
+              <span class="text-faint text-sm ml-auto">{{ reviews.length }}개</span>
+            </div>
+
+            <!-- 별점 요약 -->
+            <div class="flex flex-col sm:flex-row gap-8 pb-6 mb-6 border-b border-hairline">
+              <div class="text-center sm:text-left shrink-0">
+                <div class="text-5xl font-bold text-brand leading-none">{{ movie.rating.toFixed(1) }}</div>
+                <div class="flex items-center justify-center sm:justify-start gap-0.5 mt-2">
+                  <Star
+                    v-for="i in 5"
+                    :key="i"
+                    class="h-4 w-4"
+                    :class="i <= Math.round(movie.rating / 2) ? 'text-brand fill-current' : 'text-faint'"
+                  />
+                </div>
+                <p class="text-faint text-xs mt-2">10점 만점</p>
+              </div>
+
+              <div class="flex-1 space-y-1.5">
+                <div v-for="row in breakdown" :key="row.score" class="flex items-center gap-3">
+                  <span class="text-faint text-xs w-6 shrink-0">{{ row.score }}점</span>
+                  <div class="flex-1 h-2 rounded-full bg-surface-2">
+                    <div class="h-2 rounded-full bg-brand" :style="{ width: row.pct + '%' }"></div>
+                  </div>
+                  <span class="text-faint text-xs w-8 text-right shrink-0">{{ row.count }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 리뷰 목록 -->
+            <ul class="space-y-5">
+              <li v-for="r in reviews" :key="r.id">
+                <div class="flex items-center gap-2 mb-1.5">
+                  <span class="font-medium text-foreground text-sm">{{ r.nickname }}</span>
+                  <span class="flex items-center gap-0.5">
+                    <Star
+                      v-for="i in 5"
+                      :key="i"
+                      class="h-3 w-3"
+                      :class="i <= r.score ? 'text-brand fill-current' : 'text-faint'"
+                    />
+                  </span>
+                  <span class="text-faint text-xs ml-auto">{{ formatDate(r.date) }}</span>
+                </div>
+                <p class="text-dim text-sm leading-relaxed">{{ r.text }}</p>
+              </li>
+            </ul>
           </div>
 
           <!-- OST 섹션 -->
@@ -223,11 +316,18 @@
 
     <!-- 공통 푸터 -->
     <AppFooter />
+
+    <!-- 예매 완료 + 장르 기반 간식 추천 -->
+    <BookingDialog
+      :open="bookingOpen"
+      :booking="booked"
+      @close="bookingOpen = false"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   ArrowLeft,
@@ -238,19 +338,57 @@ import {
   Play,
   Volume2,
   Film,
+  Ticket,
   ExternalLink
 } from '@lucide/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import ImageWithFallback from '@/components/ImageWithFallback.vue'
+import BookingDialog from '@/components/BookingDialog.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import { findMovieById, featuredMovie, ACTOR_IMAGE, SCENE_IMAGE, allMovies } from '@/data/movies'
+import { addBooking } from '@/store/bookings'
+import { reviewsFor, scoreBreakdown } from '@/data/reviews'
 
 const route = useRoute()
 const router = useRouter()
 
 const movie = computed(() => findMovieById(route.params.id) || featuredMovie)
+
+// 관람평 (리뷰 API는 명세에 없어 목데이터로 구성)
+const reviews = computed(() => reviewsFor(movie.value))
+const breakdown = computed(() => scoreBreakdown(reviews.value))
+
+function formatDate(d) {
+  return new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric' }).format(d)
+}
+
+// 예매
+// 목데이터에 티켓 단가가 없어 고정값을 씁니다.
+// 백엔드 연동 시 movies.price(DB 기본값 14000)로 교체.
+const TICKET_PRICE = 14000
+
+const quantity = ref(1)
+const bookingOpen = ref(false)
+const booked = ref(null)
+
+const amount = computed(() => TICKET_PRICE * quantity.value)
+
+// 다른 영화로 이동하면 매수를 초기화한다.
+watch(() => route.params.id, () => { quantity.value = 1 })
+
+function book() {
+  // TODO: POST /api/bookings { movieId, quantity } 로 교체.
+  // 백엔드 흐름: 영화 확인 → 결제 요청 → payment.completed 수신 → 예매 확정.
+  // 지금은 성공했다고 보고 내역에 기록한 뒤 완료 모달을 띄운다.
+  booked.value = addBooking({
+    movie: movie.value,
+    quantity: quantity.value,
+    amount: amount.value
+  })
+  bookingOpen.value = true
+}
 
 const DEFAULT_PLOT =
   '절대 울지 않는 남자의 마지막 눈물을 그린 감동 액션 드라마. 복수와 용서 사이에서 고뇌하는 한 남자의 이야기가 깊은 울림을 준다. 가족을 잃은 슬픔과 분노로 가득한 주인공이 진정한 용서와 구원을 찾아가는 여정을 그린 작품으로, 액션과 드라마가 완벽하게 조화를 이룬다.'

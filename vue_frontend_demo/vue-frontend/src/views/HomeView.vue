@@ -162,7 +162,7 @@
         </div>
 
         <!-- 4. 매점 간식 추천 (데이터 연동 전 자리) -->
-        <!-- id: 헤더의 '오늘의 간식'이 여기로 스크롤한다 -->
+        <!-- id: /#snacks 로 들어오면 이 섹션으로 스크롤된다 (헤더 '간식추천'은 전용 페이지 /snacks 로 감) -->
         <div id="snacks" class="scroll-mt-24">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl lg:text-2xl font-medium text-dim">오늘의 간식 추천</h2>

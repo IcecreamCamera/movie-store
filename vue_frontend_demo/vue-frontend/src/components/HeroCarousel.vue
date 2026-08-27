@@ -24,7 +24,7 @@
       >
         <div class="absolute inset-0 cursor-pointer" @click="emit('select', movie)">
           <ImageWithFallback
-            :src="movie.poster"
+            :src="movie.backdrop || movie.poster"
             :alt="movie.title"
             class="w-full h-full object-cover"
           />
@@ -57,11 +57,11 @@
               </div>
               <div class="flex justify-start">
                 <BaseButton
-                  class="bg-white text-black hover:bg-white/90 px-12 py-4 text-xl font-semibold shadow-lg h-auto"
+                  class="bg-brand text-[#1A1408] hover:bg-brand-hover px-12 py-4 text-xl font-semibold shadow-lg h-auto"
                   @click.stop="emit('select', movie)"
                 >
-                  <Info class="h-6 w-6 mr-3" />
-                  상세 정보
+                  <Ticket class="h-6 w-6 mr-3" />
+                  보러 가기
                 </BaseButton>
               </div>
             </div>
@@ -121,7 +121,7 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Star, Info, ChevronLeft, ChevronRight } from '@lucide/vue'
+import { Star, Ticket, ChevronLeft, ChevronRight } from '@lucide/vue'
 import ImageWithFallback from '@/components/ImageWithFallback.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 
