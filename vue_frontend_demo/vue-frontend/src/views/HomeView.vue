@@ -5,7 +5,7 @@
 
     <!-- 메인 콘텐츠 -->
     <main class="relative">
-      <!-- 히어로 섹션 (Netflix 스타일) — 자동으로 옆으로 넘어가는 캐러셀 -->
+      <!-- 히어로 섹션 (캐러셀) -->
       <HeroCarousel :movies="featuredMovies" @select="openMovie" />
 
       <!-- 섹션들 -->
