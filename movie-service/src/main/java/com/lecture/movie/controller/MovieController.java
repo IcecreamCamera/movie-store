@@ -37,6 +37,18 @@ public class MovieController {
         );
     }
 
+    /**
+     * GET /api/movies/search?q={검색어} - 영화 이름 검색 (KOBIS 오픈API)
+     * 검색 결과는 movies 에 upsert 되어 바로 예매(booking)에 쓸 수 있다.
+     */
+    @GetMapping("/search")
+    public ResponseEntity<MovieDto.ApiResponse<List<MovieDto.MovieResponse>>> searchMovies(
+            @RequestParam("q") String q) {
+        return ResponseEntity.ok(
+                MovieDto.ApiResponse.success(movieService.searchMovies(q))
+        );
+    }
+
     /** GET /api/movies/{id} - 영화 상세 */
     @GetMapping("/{id}")
     public ResponseEntity<MovieDto.ApiResponse<MovieDto.MovieResponse>> getMovie(

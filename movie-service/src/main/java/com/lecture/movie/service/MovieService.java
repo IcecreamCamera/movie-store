@@ -6,6 +6,7 @@ import com.lecture.movie.entity.BoxofficeRanking.RankType;
 import com.lecture.movie.entity.Genre;
 import com.lecture.movie.entity.Movie;
 import com.lecture.movie.external.KobisClient;
+import com.lecture.movie.external.dto.KobisMovieItem;
 import com.lecture.movie.repository.BoxofficeRankingRepository;
 import com.lecture.movie.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class MovieService {
     private final MovieRepository movieRepository;
     private final BoxofficeRankingRepository rankingRepository;
     private final BoxofficeSyncService syncService;
+    private final KobisClient kobisClient;
 
     /**
      * 박스오피스 조회 (홈화면).
@@ -90,6 +92,33 @@ public class MovieService {
 
     public List<MovieDto.MovieResponse> getMoviesByGenre(Genre genre) {
         return movieRepository.findByGenreAndStatus(genre, Movie.Status.ACTIVE).stream()
+                .map(MovieDto.MovieResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 영화 이름 검색 (KOBIS 오픈API).
+     * 로컬 movies 테이블은 박스오피스로 들어온 영화만 있어 검색에 부적합하므로
+     * KOBIS 를 직접 조회하고, 결과를 movies 에 upsert 해 바로 예매 가능하게 만든다.
+     *
+     * getBoxoffice() 와 같은 이유로 NOT_SUPPORTED 를 붙인다: 클래스 레벨
+     * @Transactional(readOnly = true) 트랜잭션을 유지한 채 syncService.upsertSearchResults() 의
+     * REQUIRES_NEW 커밋 결과를 읽으면(추후 리팩터로 리포지토리 재조회가 추가될 경우) 그 커밋이
+     * 이 메서드의 스냅샷에 보이지 않을 수 있다.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public List<MovieDto.MovieResponse> searchMovies(String query) {
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+
+        List<KobisMovieItem> items = kobisClient.searchMovies(query);
+        if (items.isEmpty()) {
+            return List.of();
+        }
+
+        List<Movie> movies = syncService.upsertSearchResults(items);
+        return movies.stream()
                 .map(MovieDto.MovieResponse::from)
                 .collect(Collectors.toList());
     }
