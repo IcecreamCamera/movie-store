@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vue-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "vue-frontend-demo",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:demo"],
+      "port": 5173
+    }
+  ]
+}

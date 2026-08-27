@@ -105,6 +105,11 @@ export const allMovies = MOVIE_DATA.map((m, i) => {
   }
 })
 
+// 히어로 캐러셀 슬라이드.
+// 첫 장은 기존 featuredMovie를 그대로 쓰고, 나머지는 POSTERS(5장)가 서로 겹치지
+// 않도록 allMovies에서 인덱스 1~4를 골랐다.
+export const featuredMovies = [featuredMovie, ...allMovies.slice(1, 5)]
+
 // 홈 화면 섹션별 데이터 (원본 App.tsx의 slice 구간 그대로)
 export const personalizedTopMovies = allMovies.slice(0, 3).map((m, i) => ({ ...m, rank: i + 1 }))
 export const latestMovies = allMovies.slice(6, 12)
