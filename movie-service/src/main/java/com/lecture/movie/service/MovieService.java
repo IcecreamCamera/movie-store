@@ -11,6 +11,7 @@ import com.lecture.movie.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -32,7 +33,16 @@ public class MovieService {
     /**
      * 박스오피스 조회 (홈화면).
      * 스냅샷이 있으면 그대로 쓰고, 없을 때만 오픈API를 호출한다.
+     *
+     * 클래스 레벨 @Transactional(readOnly = true) 를 이 메서드에서만 NOT_SUPPORTED 로 무효화한다.
+     * MariaDB 기본 격리수준(REPEATABLE READ)에서는 트랜잭션 시작 시점에 스냅샷이 고정되는데,
+     * syncService.sync() 는 REQUIRES_NEW 로 별도 트랜잭션에 커밋한다. 이 메서드가 주변 읽기
+     * 트랜잭션을 유지한 채 그 스냅샷을 계속 쓰면, sync() 커밋 이후 실행되는
+     * movieRepository.findAllById() 가 방금 삽입된 Movie 행을 보지 못해 items 가 비거나
+     * 일부만 채워진다. 트랜잭션을 두지 않으면 각 리포지토리 호출이 각자의 짧은 트랜잭션에서
+     * 커밋 직후의 최신 스냅샷을 읽으므로 이 문제가 사라진다.
      */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public MovieDto.BoxofficeResponse getBoxoffice(RankType rankType) {
         LocalDate targetDate = KobisClient.resolveTargetDate(rankType, LocalDate.now());
 
