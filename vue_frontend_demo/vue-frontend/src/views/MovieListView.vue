@@ -33,8 +33,19 @@
         >{{ g }}</button>
       </div>
 
+      <!-- 로딩 -->
+      <div v-if="loading" class="py-20 text-center">
+        <p class="text-dim text-lg">불러오는 중...</p>
+      </div>
+
+      <!-- 에러 -->
+      <div v-else-if="errorMessage" class="py-20 text-center">
+        <p class="text-dim text-lg mb-2">영화 목록을 불러오지 못했어요.</p>
+        <p class="text-faint text-sm">{{ errorMessage }}</p>
+      </div>
+
       <!-- 결과 없음 -->
-      <div v-if="results.length === 0" class="py-20 text-center">
+      <div v-else-if="results.length === 0" class="py-20 text-center">
         <p class="text-dim text-lg mb-2">조건에 맞는 영화가 없어요.</p>
         <p class="text-faint text-sm">다른 검색어나 장르로 찾아보세요.</p>
       </div>
@@ -85,7 +96,8 @@ import { Search, Ticket, Star } from '@lucide/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import ImageWithFallback from '@/components/ImageWithFallback.vue'
-import { allMovies } from '@/data/movies'
+import * as movieApi from '@/api/movie.js'
+import { GENRE_OPTIONS, genreLabel, genreCode } from '@/lib/genre.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -93,36 +105,68 @@ const router = useRouter()
 const ALL = '전체'
 const genre = ref(ALL)
 
+const loading = ref(false)
+const errorMessage = ref('')
+const movies = ref([])
+
 const isSearch = computed(() => route.name === 'Search')
 const query = computed(() => String(route.query.q ?? '').trim())
 
-const genreOptions = computed(() => [ALL, ...new Set(allMovies.map((m) => m.genre))])
+const genreOptions = computed(() => [ALL, ...GENRE_OPTIONS.map(genreLabel)])
 
-// TODO: GET /api/movies (전체) / GET /api/movies/genre/{genre} (장르별) 로 교체.
-// 검색은 명세에 엔드포인트가 없어 목록을 받아 프론트에서 거릅니다.
-// 백엔드에 검색 파라미터가 생기면 그쪽으로 넘기는 편이 낫습니다.
+function mapMovie(m) {
+  return {
+    id: m.id,
+    title: m.title,
+    poster: m.posterUrl || '',
+    genre: genreLabel(m.genre),
+    year: m.openDt ? new Date(m.openDt).getFullYear() : undefined,
+    rating: Number(m.voteAverage ?? 0),
+    director: m.director || '',
+    actors: m.actors || ''
+  }
+}
+
+// GET /api/movies (전체) / GET /api/movies/genre/{genre} (장르별) / GET /api/movies/search?q= (검색, Search 라우트 전용)
+async function fetchMovies() {
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    let res
+    if (isSearch.value) {
+      if (!query.value) {
+        movies.value = []
+        return
+      }
+      res = await movieApi.search(query.value)
+    } else if (genre.value !== ALL) {
+      res = await movieApi.byGenre(genreCode(genre.value))
+    } else {
+      res = await movieApi.list()
+    }
+    const data = res?.data?.data ?? res?.data ?? []
+    movies.value = Array.isArray(data) ? data.map(mapMovie) : []
+  } catch (err) {
+    errorMessage.value =
+      err?.response?.data?.message || err?.message || '영화 목록을 불러오지 못했습니다.'
+    movies.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+// 검색 결과 위에서도 장르 칩으로 한 번 더 걸러볼 수 있게 둔다 (서버 응답에 대한 클라이언트 필터).
 const results = computed(() => {
-  let list = allMovies
-
-  if (genre.value !== ALL) {
-    list = list.filter((m) => m.genre === genre.value)
+  if (isSearch.value && genre.value !== ALL) {
+    return movies.value.filter((m) => m.genre === genre.value)
   }
-
-  if (isSearch.value && query.value) {
-    const q = query.value.toLowerCase()
-    list = list.filter(
-      (m) =>
-        m.title.toLowerCase().includes(q) ||
-        m.director.toLowerCase().includes(q) ||
-        (m.actors ?? '').toLowerCase().includes(q)
-    )
-  }
-
-  return list
+  return movies.value
 })
 
 // 검색어가 바뀌면 장르 필터는 풀어준다. 결과가 0이 되는 걸 막기 위해서.
 watch(query, () => { genre.value = ALL })
+
+watch([isSearch, query, genre], fetchMovies, { immediate: true })
 
 function onSearch(q) {
   router.push({ name: 'Search', query: { q } })

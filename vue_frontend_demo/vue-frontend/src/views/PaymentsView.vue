@@ -13,8 +13,19 @@
     </div>
 
     <div class="max-w-4xl mx-auto px-8 lg:px-16 py-8">
+      <!-- 로딩 -->
+      <div v-if="loading" class="py-20 text-center">
+        <p class="text-dim text-lg">불러오는 중...</p>
+      </div>
+
+      <!-- 에러 -->
+      <div v-else-if="errorMessage" class="py-20 text-center">
+        <p class="text-dim text-lg mb-2">결제 내역을 불러오지 못했어요.</p>
+        <p class="text-faint text-sm">{{ errorMessage }}</p>
+      </div>
+
       <!-- 비었을 때 -->
-      <div v-if="items.length === 0" class="py-20 text-center">
+      <div v-else-if="items.length === 0" class="py-20 text-center">
         <p class="text-dim text-lg mb-2">아직 예매한 영화가 없어요.</p>
         <p class="text-faint text-sm mb-6">영화를 예매하면 여기에 결제 내역이 쌓여요.</p>
         <BaseButton
@@ -74,9 +85,6 @@
           </li>
         </ul>
 
-        <p class="text-faint text-xs mt-6">
-          ※ 새로고침하면 사라집니다. 백엔드 연동 전까지 화면 흐름 확인용입니다.
-        </p>
       </template>
     </div>
 
@@ -85,17 +93,71 @@
 </template>
 
 <script setup>
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { CreditCard, Ticket } from '@lucide/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import { bookings, totalPaid } from '@/store/bookings'
+import * as bookingApi from '@/api/booking.js'
+import * as paymentApi from '@/api/payment.js'
+import { user, isLoggedIn } from '@/store/auth'
+import { genreLabel } from '@/lib/genre.js'
 
 const router = useRouter()
 
-// TODO: GET /api/bookings/my + GET /api/payments/user/{userId} 로 교체.
-const items = bookings
+const loading = ref(false)
+const errorMessage = ref('')
+const items = ref([])
+
+const totalPaid = computed(() =>
+  items.value.reduce((sum, item) => sum + (item.payment?.amount ?? 0), 0)
+)
+
+// GET /api/bookings/my + GET /api/payments/user/{userId} 를 bookingId로 묶는다.
+async function load() {
+  if (!isLoggedIn.value || !user.value?.id) return
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    const [bookingRes, paymentRes] = await Promise.all([
+      bookingApi.my(),
+      paymentApi.byUser(user.value.id)
+    ])
+    const bookingList = bookingRes?.data?.data ?? bookingRes?.data ?? []
+    const paymentList = paymentRes?.data?.data ?? paymentRes?.data ?? []
+    const paymentByBookingId = new Map(
+      (Array.isArray(paymentList) ? paymentList : []).map((p) => [p.bookingId, p])
+    )
+
+    items.value = (Array.isArray(bookingList) ? bookingList : []).map((b) => {
+      const payment = paymentByBookingId.get(b.id)
+      return {
+        bookingId: b.id,
+        bookingNo: b.id ? `BK-${b.id}` : '',
+        movieTitle: b.movie?.title ?? '',
+        genre: genreLabel(b.movie?.genre),
+        quantity: b.quantity,
+        createdAt: b.createdAt ? new Date(b.createdAt) : new Date(),
+        snacks: [],
+        snackAmount: 0,
+        payment: {
+          amount: Number(payment?.amount ?? b.amount ?? 0),
+          status: payment?.status ?? (b.status === 'CONFIRMED' ? 'COMPLETED' : b.status),
+          method: '간편결제',
+          transactionId: payment?.transactionId ?? '-'
+        }
+      }
+    })
+  } catch (err) {
+    errorMessage.value =
+      err?.response?.data?.message || err?.message || '결제 내역을 불러오지 못했습니다.'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(load)
 
 // 템플릿에서 v-for로 이어붙이면 개행이 공백으로 접혀 "핫도그 2개 , 나쵸"처럼 된다.
 function snackSummary(list) {

@@ -7,7 +7,7 @@
         <h1 class="text-2xl font-bold text-foreground mb-1">로그인</h1>
         <p class="text-dim text-sm mb-8">예매하려면 로그인이 필요해요.</p>
 
-        <form class="space-y-4" @submit.prevent="signIn">
+        <form class="space-y-4" @submit.prevent="onSubmit">
           <div>
             <label for="email" class="block text-sm text-dim mb-2">이메일</label>
             <BaseInput id="email" v-model="email" type="email" placeholder="you@example.com"
@@ -31,10 +31,10 @@
 
         <div class="mt-10 rounded-lg bg-surface border border-hairline p-4">
           <p class="text-faint text-xs leading-relaxed">
-            화면 껍데기입니다. 실제 로그인은 auth-server의 OAuth2 인가 코드 흐름
+            로그인 버튼을 누르면 auth-server의 OAuth2 인가 코드 흐름
             (<span class="font-mono">/oauth2/authorize</span> →
-            <span class="font-mono">/oauth2/token</span>)을 씁니다.
-            백엔드 스택을 띄운 뒤 연결합니다.
+            <span class="font-mono">/oauth2/token</span>)으로 이동합니다.
+            아이디/비밀번호는 이동한 화면에서 입력해요.
           </p>
         </div>
       </div>
@@ -46,20 +46,19 @@
 
 <script setup>
 import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
-import { signIn as store } from '@/store/auth'
+import { startLogin } from '@/store/auth'
 
-const router = useRouter()
+// 이메일/비밀번호 입력칸은 실제 로그인 폼이 auth-server 쪽에 있어 이 화면에서는 쓰지 않는다.
 const email = ref('')
 const password = ref('')
 
-function signIn() {
-  // TODO: GET /oauth2/authorize → 콜백에서 POST /oauth2/token 으로 교체.
-  store(email.value || 'guest@odok.kr')
-  router.push('/mypage')
+// GET /oauth2/authorize 로 리다이렉트. 콜백(/callback)에서 인가 코드를 토큰으로 교환한다.
+function onSubmit() {
+  startLogin()
 }
 </script>

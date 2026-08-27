@@ -8,7 +8,7 @@
       <div class="max-w-7xl mx-auto px-8 lg:px-16 py-6">
         <div class="flex items-center gap-3">
           <Film class="h-6 w-6 text-brand" />
-          <h1 class="text-2xl font-bold text-foreground">{{ movie.title }}</h1>
+          <h1 class="text-2xl font-bold text-foreground">{{ movie?.title || '영화 정보' }}</h1>
         </div>
         <p class="text-dim mt-2">줄거리와 출연진을 보고, 마음에 들면 바로 예매하세요.</p>
       </div>
@@ -27,7 +27,23 @@
         </BaseButton>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <!-- 로딩 -->
+      <div v-if="loading" class="py-20 text-center">
+        <p class="text-dim text-lg">불러오는 중...</p>
+      </div>
+
+      <!-- 에러 -->
+      <div v-else-if="errorMessage" class="py-20 text-center">
+        <p class="text-dim text-lg mb-2">영화 정보를 불러오지 못했어요.</p>
+        <p class="text-faint text-sm">{{ errorMessage }}</p>
+      </div>
+
+      <!-- 없음 -->
+      <div v-else-if="!movie" class="py-20 text-center">
+        <p class="text-dim text-lg">영화를 찾을 수 없어요.</p>
+      </div>
+
+      <div v-else class="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <!-- 메인 콘텐츠 -->
         <div class="lg:col-span-3 space-y-8">
           <!-- 영화 기본 정보 + 줄거리 + 출연진 -->
@@ -351,17 +367,55 @@ import ImageWithFallback from '@/components/ImageWithFallback.vue'
 import BookingDialog from '@/components/BookingDialog.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
-import { findMovieById, featuredMovie, ACTOR_IMAGE, SCENE_IMAGE, allMovies } from '@/data/movies'
-import { addBooking } from '@/store/bookings'
+import * as movieApi from '@/api/movie.js'
+import * as bookingApi from '@/api/booking.js'
+import { ACTOR_IMAGE, SCENE_IMAGE, allMovies } from '@/data/movies'
+import { genreLabel } from '@/lib/genre.js'
 import { reviewsFor, scoreBreakdown } from '@/data/reviews'
 
 const route = useRoute()
 const router = useRouter()
 
-const movie = computed(() => findMovieById(route.params.id) || featuredMovie)
+const loading = ref(false)
+const errorMessage = ref('')
+const movie = ref(null)
+
+function mapMovie(m) {
+  return {
+    id: m.id,
+    title: m.title,
+    poster: m.posterUrl || '',
+    genre: genreLabel(m.genre),
+    year: m.openDt ? new Date(m.openDt).getFullYear() : undefined,
+    rating: Number(m.voteAverage ?? 0),
+    runtime: m.runtime || '-',
+    director: m.director || '정보 없음',
+    description: m.description || '',
+    price: Number(m.price ?? 14000)
+  }
+}
+
+// GET /api/movies/{id}
+async function fetchMovie() {
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    const res = await movieApi.detail(route.params.id)
+    const data = res?.data?.data ?? res?.data
+    movie.value = data ? mapMovie(data) : null
+  } catch (err) {
+    errorMessage.value =
+      err?.response?.data?.message || err?.message || '영화 정보를 불러오지 못했습니다.'
+    movie.value = null
+  } finally {
+    loading.value = false
+  }
+}
+
+watch(() => route.params.id, fetchMovie, { immediate: true })
 
 // 관람평 (리뷰 API는 명세에 없어 목데이터로 구성)
-const reviews = computed(() => reviewsFor(movie.value))
+const reviews = computed(() => (movie.value ? reviewsFor(movie.value) : []))
 const breakdown = computed(() => scoreBreakdown(reviews.value))
 
 function formatDate(d) {
@@ -369,15 +423,14 @@ function formatDate(d) {
 }
 
 // 예매
-// 목데이터에 티켓 단가가 없어 고정값을 씁니다.
-// 백엔드 연동 시 movies.price(DB 기본값 14000)로 교체.
-const TICKET_PRICE = 14000
+// 티켓 단가는 GET /api/movies/{id}가 내려주는 movie.price를 쓴다 (DB 기본값 14000).
+const TICKET_PRICE = computed(() => movie.value?.price ?? 14000)
 
 const quantity = ref(1)
 const bookingOpen = ref(false)
 const booked = ref(null)
 
-const amount = computed(() => TICKET_PRICE * quantity.value)
+const amount = computed(() => TICKET_PRICE.value * quantity.value)
 
 // 다른 영화로 이동하면 매수를 초기화한다.
 watch(() => route.params.id, () => { quantity.value = 1 })
@@ -389,15 +442,46 @@ function book() {
 }
 
 // 간식을 고르고 결제하거나('안 살래요' 포함) 하면 그때 예매가 확정된다.
-// TODO: POST /api/bookings { movieId, quantity, snacks } 로 교체.
-// 백엔드 흐름: 영화 확인 → 결제 요청 → payment.completed 수신 → 예매 확정.
-function confirmBooking(snacks) {
-  booked.value = addBooking({
-    movie: movie.value,
-    quantity: quantity.value,
-    amount: amount.value,
-    snacks
-  })
+// POST /api/bookings { movieId, quantity } 로 예매를 생성한다.
+// 간식은 recommend-service가 아직 없어 실제로 결제되진 않고, 화면에만 표시된다.
+// booking-service 응답에는 결제 상세(payment)가 없어(결제는 비동기), 확정 화면은 그 부분만 모의로 채운다.
+async function confirmBooking(snacks) {
+  try {
+    const res = await bookingApi.create({ movieId: movie.value.id, quantity: quantity.value })
+    const data = res?.data?.data ?? res?.data
+    booked.value = toBookingViewModel(data, snacks)
+  } catch (err) {
+    const msg = err?.response?.data?.message || err?.message || '예매에 실패했습니다.'
+    window.alert(msg)
+  }
+}
+
+function toBookingViewModel(b, snacks = []) {
+  const snackItems = (snacks ?? []).map((s) => ({
+    id: s.id,
+    name: s.name,
+    taste: s.taste,
+    price: s.price,
+    quantity: s.quantity ?? 1
+  }))
+  const snackAmount = snackItems.reduce((sum, s) => sum + s.price * s.quantity, 0)
+  const ticketAmount = Number(b?.amount ?? amount.value)
+
+  return {
+    bookingId: b?.id,
+    bookingNo: b?.id ? `BK-${b.id}` : '',
+    movieTitle: b?.movie?.title ?? movie.value?.title ?? '',
+    quantity: b?.quantity ?? quantity.value,
+    ticketAmount,
+    snacks: snackItems,
+    snackAmount,
+    payment: {
+      status: b?.status === 'CONFIRMED' ? 'COMPLETED' : (b?.status ?? 'COMPLETED'),
+      method: '간편결제',
+      transactionId: b?.id ? `BK${b.id}` : '',
+      amount: ticketAmount + snackAmount
+    }
+  }
 }
 
 function closeBooking() {
