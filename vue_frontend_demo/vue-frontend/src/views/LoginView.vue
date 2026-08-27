@@ -19,8 +19,14 @@
               class="bg-surface border-hairline text-foreground placeholder:text-faint" />
           </div>
 
-          <BaseButton type="submit" class="w-full bg-brand text-[#1A1408] hover:bg-brand-hover font-semibold">
-            로그인
+          <p v-if="errorMessage" class="text-brand text-xs">{{ errorMessage }}</p>
+
+          <BaseButton
+            type="submit"
+            :disabled="isSubmitting"
+            class="w-full bg-brand text-[#1A1408] hover:bg-brand-hover font-semibold"
+          >
+            {{ isSubmitting ? '로그인 중...' : '로그인' }}
           </BaseButton>
         </form>
 
@@ -31,10 +37,8 @@
 
         <div class="mt-10 rounded-lg bg-surface border border-hairline p-4">
           <p class="text-faint text-xs leading-relaxed">
-            로그인 버튼을 누르면 auth-server의 OAuth2 인가 코드 흐름
-            (<span class="font-mono">/oauth2/authorize</span> →
-            <span class="font-mono">/oauth2/token</span>)으로 이동합니다.
-            아이디/비밀번호는 이동한 화면에서 입력해요.
+            이메일과 비밀번호를 입력하고 로그인을 누르면 이 화면에서 바로 인증을 마치고
+            홈으로 돌아옵니다. 별도의 로그인 화면으로 이동하지 않아요.
           </p>
         </div>
       </div>
@@ -51,14 +55,35 @@ import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
-import { startLogin } from '@/store/auth'
+import { loginAndAuthorize, CredentialError } from '@/store/auth'
 
-// 이메일/비밀번호 입력칸은 실제 로그인 폼이 auth-server 쪽에 있어 이 화면에서는 쓰지 않는다.
 const email = ref('')
 const password = ref('')
+const isSubmitting = ref(false)
+const errorMessage = ref('')
 
-// GET /oauth2/authorize 로 리다이렉트. 콜백(/callback)에서 인가 코드를 토큰으로 교환한다.
-function onSubmit() {
-  startLogin()
+// 앱 화면에서 자격증명을 받아 세션을 만들고 authorize로 이동한다. 성공하면 이 화면을
+// 떠나 /callback을 거쳐 홈으로 돌아오고, 자격증명이 틀리면 이 화면에 남아 인라인
+// 메시지를 보여준다.
+async function onSubmit() {
+  if (!email.value.trim() || !password.value.trim()) {
+    errorMessage.value = '이메일과 비밀번호를 모두 입력해 주세요.'
+    return
+  }
+
+  errorMessage.value = ''
+  isSubmitting.value = true
+  try {
+    await loginAndAuthorize(email.value, password.value)
+    // 성공 시 loginAndAuthorize 내부에서 window.location.href로 이동하므로
+    // 이 컴포넌트는 곧 언마운트된다.
+  } catch (err) {
+    if (err instanceof CredentialError) {
+      errorMessage.value = err.message
+    } else {
+      errorMessage.value = '로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'
+    }
+    isSubmitting.value = false
+  }
 }
 </script>
