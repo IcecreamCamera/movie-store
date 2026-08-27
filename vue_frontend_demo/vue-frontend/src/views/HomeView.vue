@@ -5,54 +5,8 @@
 
     <!-- 메인 콘텐츠 -->
     <main class="relative">
-      <!-- 히어로 섹션 (Netflix 스타일) -->
-      <div class="relative h-[85vh] mb-8">
-        <div class="absolute inset-0 cursor-pointer" @click="openMovie(featuredMovie)">
-          <ImageWithFallback
-            :src="featuredMovie.poster"
-            :alt="featuredMovie.title"
-            class="w-full h-full object-cover"
-          />
-          <!-- 그라데이션 오버레이 -->
-          <div class="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent"></div>
-          <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
-        </div>
-
-        <!-- 히어로 콘텐츠 -->
-        <div class="absolute bottom-0 left-0 w-full">
-          <div class="max-w-7xl mx-auto px-8 lg:px-16 relative pb-8 lg:pb-16">
-            <div class="max-w-lg">
-              <h1 class="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-                {{ featuredMovie.title }}
-              </h1>
-              <p class="text-white/90 text-lg lg:text-xl leading-relaxed mb-6">
-                {{ featuredMovie.description.slice(0, 200) }}...
-              </p>
-              <div class="flex items-center gap-4 mb-8 text-white/80">
-                <div class="flex items-center gap-2">
-                  <Star class="h-5 w-5 text-yellow-400 fill-current" />
-                  <span class="text-lg font-semibold">{{ featuredMovie.rating }}</span>
-                </div>
-                <span>•</span>
-                <span>{{ featuredMovie.year }}년</span>
-                <span>•</span>
-                <span>{{ featuredMovie.runtime }}분</span>
-                <span>•</span>
-                <span>{{ featuredMovie.genre }}</span>
-              </div>
-              <div class="flex justify-start">
-                <BaseButton
-                  class="bg-white text-black hover:bg-white/90 px-12 py-4 text-xl font-semibold shadow-lg h-auto"
-                  @click.stop="openMovie(featuredMovie)"
-                >
-                  <Info class="h-6 w-6 mr-3" />
-                  상세 정보
-                </BaseButton>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- 히어로 섹션 (캐러셀) -->
+      <HeroCarousel :movies="featuredMovies" @select="openMovie" />
 
       <!-- 섹션들 -->
       <div class="max-w-7xl mx-auto px-8 lg:px-16 pt-[100px] space-y-[100px] pb-16">
