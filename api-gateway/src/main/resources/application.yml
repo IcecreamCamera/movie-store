@@ -19,7 +19,27 @@ spring:
           enabled: true
           lower-case-service-id: true
 
+      # 다운스트림 서비스들이 각자 CORS 헤더를 붙이고 게이트웨이도 붙여서
+      # Access-Control-Allow-Origin 이 중복된다. 브라우저는 값이 2개면
+      # "contains multiple values" 로 요청을 거부한다. 응답 헤더를 중복 제거한다.
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
       routes:
+        # 게이트웨이 루트로 들어오면 OAuth2 인가 요청으로 보낸다.
+        #
+        # 사용자가 앱의 로그인 버튼을 거치지 않고 :8080/login 으로 바로 들어가 로그인하면,
+        # 세션에 저장된 인가 요청이 없어 인가 코드가 발급되지 않고 기본 성공 URL(/)로 떨어진다.
+        # 이때 프론트 홈으로만 보내면 토큰이 없어 로그인이 안 된 상태로 보인다.
+        # 인가 요청으로 보내면 이미 인증된 세션이 있으므로 즉시 code 를 발급받아
+        # /callback 으로 이어져 로그인이 완성된다.
+        - id: root-to-authorize
+          uri: no://op
+          predicates:
+            - Path=/
+          filters:
+            - RedirectTo=302, ${AUTHORIZE_URL:http://localhost:8080/oauth2/authorize?response_type=code&client_id=web-client&redirect_uri=http://localhost:3000/callback&scope=openid}
+
         # Auth Server (OAuth2 / OIDC / Login)
         - id: auth-server
           uri: lb://auth-server
