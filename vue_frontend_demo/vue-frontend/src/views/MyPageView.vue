@@ -46,48 +46,61 @@
           </div>
         </section>
 
-        <!-- 요약 -->
-        <div class="grid grid-cols-2 gap-4 mb-8">
-          <div class="rounded-xl bg-surface border border-hairline p-5">
-            <span class="block text-sm text-faint mb-1">예매</span>
-            <span class="text-2xl font-bold text-foreground">{{ items.length }}건</span>
-          </div>
-          <div class="rounded-xl bg-surface border border-hairline p-5">
-            <span class="block text-sm text-faint mb-1">총 결제</span>
-            <span class="text-2xl font-bold text-brand">{{ totalPaid.toLocaleString() }}원</span>
-          </div>
+        <!-- 로딩 -->
+        <div v-if="loading" class="py-12 text-center">
+          <p class="text-dim text-lg">불러오는 중...</p>
         </div>
 
-        <!-- 최근 예매 -->
-        <section>
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-foreground">최근 예매</h2>
-            <BaseButton
-              variant="ghost"
-              class="text-dim hover:text-white"
-              @click="router.push('/payments')"
-            >
-              전체 보기
-            </BaseButton>
+        <!-- 에러 -->
+        <div v-else-if="errorMessage" class="py-12 text-center">
+          <p class="text-dim text-lg mb-2">예매 내역을 불러오지 못했어요.</p>
+          <p class="text-faint text-sm">{{ errorMessage }}</p>
+        </div>
+
+        <template v-else>
+          <!-- 요약 -->
+          <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="rounded-xl bg-surface border border-hairline p-5">
+              <span class="block text-sm text-faint mb-1">예매</span>
+              <span class="text-2xl font-bold text-foreground">{{ items.length }}건</span>
+            </div>
+            <div class="rounded-xl bg-surface border border-hairline p-5">
+              <span class="block text-sm text-faint mb-1">총 결제</span>
+              <span class="text-2xl font-bold text-brand">{{ totalPaid.toLocaleString() }}원</span>
+            </div>
           </div>
 
-          <p v-if="items.length === 0" class="text-faint text-sm py-8 text-center">
-            아직 예매한 영화가 없어요.
-          </p>
-          <ul v-else class="space-y-3">
-            <li
-              v-for="item in items.slice(0, 3)"
-              :key="item.bookingId"
-              class="rounded-lg bg-surface border border-hairline p-4 flex items-center justify-between gap-4"
-            >
-              <div>
-                <span class="text-foreground font-medium">{{ item.movieTitle }}</span>
-                <span class="text-faint text-sm ml-2">{{ item.quantity }}매</span>
-              </div>
-              <span class="text-brand text-sm shrink-0">{{ item.payment.amount.toLocaleString() }}원</span>
-            </li>
-          </ul>
-        </section>
+          <!-- 최근 예매 -->
+          <section>
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-semibold text-foreground">최근 예매</h2>
+              <BaseButton
+                variant="ghost"
+                class="text-dim hover:text-white"
+                @click="router.push('/payments')"
+              >
+                전체 보기
+              </BaseButton>
+            </div>
+
+            <p v-if="items.length === 0" class="text-faint text-sm py-8 text-center">
+              아직 예매한 영화가 없어요.
+            </p>
+            <ul v-else class="space-y-3">
+              <li
+                v-for="item in items.slice(0, 3)"
+                :key="item.bookingId"
+                class="rounded-lg bg-surface border border-hairline p-4 flex items-center justify-between gap-4"
+              >
+                <div>
+                  <span class="text-foreground font-medium">{{ item.movieTitle }}</span>
+                  <span class="text-faint text-sm ml-2">{{ item.quantity }}매</span>
+                </div>
+                <span class="text-brand text-sm shrink-0">{{ item.payment.amount.toLocaleString() }}원</span>
+              </li>
+            </ul>
+          </section>
+        </template>
       </template>
     </div>
 
@@ -96,17 +109,60 @@
 </template>
 
 <script setup>
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { User } from '@lucide/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import { user, isLoggedIn, signOut } from '@/store/auth'
-import { bookings as items, totalPaid } from '@/store/bookings'
+import { user, isLoggedIn, signOut, refreshUser } from '@/store/auth'
+import * as bookingApi from '@/api/booking.js'
+import { genreLabel } from '@/lib/genre.js'
 
 const router = useRouter()
 
-// TODO: GET /api/users/me + GET /api/bookings/my 로 교체.
+const loading = ref(false)
+const errorMessage = ref('')
+const items = ref([])
+
+const totalPaid = computed(() =>
+  items.value.reduce((sum, item) => sum + (item.payment?.amount ?? 0), 0)
+)
+
+function mapBooking(b) {
+  return {
+    bookingId: b.id,
+    bookingNo: b.id ? `BK-${b.id}` : '',
+    movieTitle: b.movie?.title ?? '',
+    genre: genreLabel(b.movie?.genre),
+    quantity: b.quantity,
+    createdAt: b.createdAt ? new Date(b.createdAt) : new Date(),
+    payment: {
+      amount: Number(b.amount ?? 0),
+      status: b.status === 'CONFIRMED' ? 'COMPLETED' : b.status
+    }
+  }
+}
+
+// GET /api/users/me + GET /api/bookings/my
+async function load() {
+  if (!isLoggedIn.value) return
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    await refreshUser()
+    const res = await bookingApi.my()
+    const data = res?.data?.data ?? res?.data ?? []
+    items.value = Array.isArray(data) ? data.map(mapBooking) : []
+  } catch (err) {
+    errorMessage.value =
+      err?.response?.data?.message || err?.message || '내 정보를 불러오지 못했습니다.'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(load)
 
 function logout() {
   signOut()

@@ -37,6 +37,11 @@ const routes = [
     component: () => import('@/views/LoginView.vue')
   },
   {
+    path: '/callback',
+    name: 'Callback',
+    component: () => import('@/views/CallbackView.vue')
+  },
+  {
     path: '/register',
     name: 'Register',
     component: () => import('@/views/RegisterView.vue')

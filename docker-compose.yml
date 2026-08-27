@@ -276,7 +276,7 @@ services:
 
   frontend-web:
     build:
-      context: ./vue-frontend
+      context: ./vue_frontend_demo/vue-frontend
       dockerfile: Dockerfile
     container_name: lecture-frontend
     ports:

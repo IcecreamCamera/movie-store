@@ -15,6 +15,23 @@
     </div>
 
     <div class="max-w-7xl mx-auto px-8 lg:px-16 py-8">
+      <!-- 로딩 -->
+      <div v-if="loading" class="py-20 text-center">
+        <p class="text-dim text-lg">불러오는 중...</p>
+      </div>
+
+      <!-- 에러 -->
+      <div v-else-if="errorMessage" class="py-20 text-center">
+        <p class="text-dim text-lg mb-2">박스오피스 정보를 불러오지 못했어요.</p>
+        <p class="text-faint text-sm">{{ errorMessage }}</p>
+      </div>
+
+      <!-- 데이터 없음 -->
+      <div v-else-if="rankedMovies.length < 2" class="py-20 text-center">
+        <p class="text-dim text-lg mb-2">박스오피스 데이터가 아직 없어요.</p>
+      </div>
+
+      <template v-else>
       <!-- VS 섹션 - 1위 vs 2위 -->
       <div class="mb-12">
         <div class="bg-surface/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-hairline">
@@ -158,7 +175,7 @@
                 <Trophy class="h-7 w-7 text-brand" />
                 <div>
                   <h3 class="text-2xl font-bold text-foreground">박스오피스 TOP 10</h3>
-                  <p class="text-dim text-sm mt-0.5">별점 합계 기준</p>
+                  <p class="text-dim text-sm mt-0.5">{{ targetDateLabel || '주간 박스오피스' }}</p>
                 </div>
               </div>
 
@@ -250,7 +267,7 @@
               <TrendingUp class="h-7 w-7 text-brand" />
               <div>
                 <h3 class="text-2xl font-bold text-foreground">이번주 화제작</h3>
-                <p class="text-dim text-sm mt-0.5">트렌딩 지수 기준</p>
+                <p class="text-dim text-sm mt-0.5">주간 관객수 기준</p>
               </div>
             </div>
           </div>
@@ -308,10 +325,10 @@
                   </h4>
                   <p class="text-xs text-dim line-clamp-1 mb-2">{{ movie.director }}</p>
 
-                  <!-- 트렌딩 지표 -->
+                  <!-- 주간 관객수 -->
                   <div class="flex items-center justify-between text-xs">
-                    <span class="text-brand font-medium">+{{ movie.buzz }}%</span>
-                    <span class="text-faint">화제성</span>
+                    <span class="text-brand font-medium">{{ formatAudience(movie.audienceCnt) }}명</span>
+                    <span class="text-faint">주간 관객</span>
                   </div>
                 </div>
               </div>
@@ -344,11 +361,12 @@
       <div class="mt-8 text-center">
         <div class="bg-surface/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-hairline">
           <p class="text-dim mb-2">
-            <span class="font-semibold text-foreground">랭킹 기준</span> — 평점, 관객수, 리뷰 점수를 종합하여 산정
+            <span class="font-semibold text-foreground">랭킹 기준</span> — KOBIS 주간 박스오피스 순위
           </p>
-          <p class="text-dim text-sm">매일 오전 6시에 업데이트됩니다.</p>
+          <p class="text-dim text-sm">{{ targetDateLabel || '박스오피스 집계 기준 업데이트' }}</p>
         </div>
       </div>
+      </template>
     </div>
 
     <!-- 공통 푸터 -->
@@ -357,14 +375,15 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Star, TrendingUp, Crown, Medal, Trophy, ChevronLeft, ChevronRight } from '@lucide/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import ImageWithFallback from '@/components/ImageWithFallback.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
-import { allMovies } from '@/data/movies'
+import * as movieApi from '@/api/movie.js'
+import { genreLabel } from '@/lib/genre.js'
 
 const router = useRouter()
 
@@ -372,13 +391,56 @@ const router = useRouter()
 const currentSlide = ref(0)
 const MOVIES_PER_SLIDE = 4
 
-// 평점 기준으로 정렬
-const rankedMovies = computed(() =>
-  allMovies
-    .map((movie, index) => ({ ...movie, rank: index + 1 }))
-    .sort((a, b) => b.rating - a.rating)
-    .map((movie, index) => ({ ...movie, rank: index + 1 }))
-)
+const loading = ref(false)
+const errorMessage = ref('')
+const items = ref([]) // BoxofficeItem[] (rankNo, rankInten, audienceCnt, movie)
+const targetDate = ref('')
+
+// 박스오피스 항목 하나를 화면에서 쓰기 좋은 모양으로 정리한다.
+// movie-service의 MovieResponse엔 director/runtime이 없어 다른 화면(MovieListView 등)과
+// 동일하게 director는 '정보 없음'으로 채운다.
+function mapItem(item) {
+  const m = item.movie || {}
+  return {
+    id: m.id,
+    title: m.title,
+    poster: m.posterUrl || '',
+    genre: genreLabel(m.genre),
+    year: m.openDt ? new Date(m.openDt).getFullYear() : undefined,
+    rating: Number(m.voteAverage ?? 0),
+    director: m.director || '정보 없음',
+    rank: item.rankNo,
+    rankInten: item.rankInten,
+    audienceCnt: item.audienceCnt,
+    audienceAcc: m.audienceAcc
+  }
+}
+
+// GET /api/movies/boxoffice?type=WEEKLY
+async function fetchBoxoffice() {
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    const res = await movieApi.boxoffice('WEEKLY')
+    const data = res?.data?.data ?? res?.data
+    targetDate.value = data?.targetDate ?? ''
+    // 포스터 없는 영화(검색으로 들어와 TMDB 매칭 실패)는 랭킹 화면에서 제외한다.
+    items.value = Array.isArray(data?.items)
+      ? data.items.filter((it) => movieApi.hasPoster(it.movie)).map(mapItem)
+      : []
+  } catch (err) {
+    errorMessage.value =
+      err?.response?.data?.message || err?.message || '박스오피스 정보를 불러오지 못했습니다.'
+    items.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchBoxoffice)
+
+// rankNo 순으로 이미 정렬돼 오는 박스오피스 응답을 그대로 화면 순위로 쓴다.
+const rankedMovies = computed(() => items.value)
 
 const topMovie = computed(() => rankedMovies.value[0])
 const secondMovie = computed(() => rankedMovies.value[1])
@@ -390,10 +452,19 @@ const currentSlideMovies = computed(() => {
   return boxOfficeMovies.value.slice(start, start + MOVIES_PER_SLIDE)
 })
 
-// 원본은 Math.random()으로 화제성 %를 만들었는데 렌더마다 흔들리지 않도록 고정값으로 옮겼다.
-const trendingMovies = computed(() =>
-  rankedMovies.value.slice(2, 10).map((movie, i) => ({ ...movie, buzz: 480 - i * 47 }))
-)
+const trendingMovies = computed(() => rankedMovies.value.slice(2, 10))
+
+// targetDate("2026-08-23")를 "8월 23일 기준"처럼 보여준다.
+const targetDateLabel = computed(() => {
+  if (!targetDate.value) return ''
+  const d = new Date(targetDate.value)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 기준`
+})
+
+function formatAudience(n) {
+  return Number(n ?? 0).toLocaleString()
+}
 
 function nextSlide() {
   currentSlide.value = (currentSlide.value + 1) % totalSlides.value

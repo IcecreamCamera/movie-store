@@ -5,6 +5,8 @@ import com.lecture.movie.entity.BoxofficeRanking;
 import com.lecture.movie.entity.BoxofficeRanking.RankType;
 import com.lecture.movie.entity.Genre;
 import com.lecture.movie.entity.Movie;
+import com.lecture.movie.external.KobisClient;
+import com.lecture.movie.external.dto.KobisMovieItem;
 import com.lecture.movie.repository.BoxofficeRankingRepository;
 import com.lecture.movie.repository.MovieRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +17,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -24,6 +27,7 @@ class MovieServiceTest {
     private MovieRepository movieRepository;
     private BoxofficeRankingRepository rankingRepository;
     private BoxofficeSyncService syncService;
+    private KobisClient kobisClient;
     private MovieService service;
 
     @BeforeEach
@@ -31,7 +35,8 @@ class MovieServiceTest {
         movieRepository = mock(MovieRepository.class);
         rankingRepository = mock(BoxofficeRankingRepository.class);
         syncService = mock(BoxofficeSyncService.class);
-        service = new MovieService(movieRepository, rankingRepository, syncService);
+        kobisClient = mock(KobisClient.class);
+        service = new MovieService(movieRepository, rankingRepository, syncService, kobisClient);
     }
 
     private Movie movie() {
@@ -95,5 +100,57 @@ class MovieServiceTest {
         when(movieRepository.incrementBookingCount(999L)).thenReturn(0);
 
         assertThrows(IllegalArgumentException.class, () -> service.increaseBookingCount(999L));
+    }
+
+    @Test
+    void 검색어가_비면_KOBIS를_호출하지_않는다() {
+        List<MovieDto.MovieResponse> emptyResult = service.searchMovies("");
+        List<MovieDto.MovieResponse> nullResult = service.searchMovies(null);
+
+        assertTrue(emptyResult.isEmpty());
+        assertTrue(nullResult.isEmpty());
+        verify(kobisClient, never()).searchMovies(any());
+    }
+
+    @Test
+    void 검색_결과를_upsert하고_응답으로_변환한다() {
+        KobisMovieItem item1 = KobisMovieItem.builder()
+                .movieCd("20183782")
+                .movieNm("기생충")
+                .movieNmEn("PARASITE")
+                .openDt(LocalDate.of(2019, 5, 30))
+                .genreNm("드라마")
+                .directorName("봉준호")
+                .build();
+        KobisMovieItem item2 = KobisMovieItem.builder()
+                .movieCd("20200001")
+                .movieNm("마약 기생충")
+                .movieNmEn(null)
+                .openDt(null)
+                .genreNm("드라마")
+                .directorName(null)
+                .build();
+        when(kobisClient.searchMovies("기생충")).thenReturn(List.of(item1, item2));
+
+        Movie movie1 = Movie.builder()
+                .id(1L)
+                .movieCd("20183782")
+                .title("기생충")
+                .genre(Genre.DRAMA)
+                .build();
+        Movie movie2 = Movie.builder()
+                .id(2L)
+                .movieCd("20200001")
+                .title("마약 기생충")
+                .genre(Genre.DRAMA)
+                .build();
+        when(syncService.upsertSearchResults(List.of(item1, item2)))
+                .thenReturn(List.of(movie1, movie2));
+
+        List<MovieDto.MovieResponse> response = service.searchMovies("기생충");
+
+        assertEquals(2, response.size());
+        assertEquals("기생충", response.get(0).getTitle());
+        assertEquals("마약 기생충", response.get(1).getTitle());
     }
 }

@@ -1,0 +1,41 @@
+import axios from 'axios'
+import api from './index.js'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+
+// OAuth2 Authorization Code -> Access Token 교환.
+// CLIENT_SECRET_BASIC: Authorization 헤더에 client_id:client_secret을 Base64로 인코딩해 보낸다.
+// auth-server는 사전 등록된 client_id/secret/redirect_uri만 인정하므로 값은 .env 그대로 써야 한다.
+export function exchangeCode(code) {
+  const clientId = import.meta.env.VITE_CLIENT_ID
+  const clientSecret = import.meta.env.VITE_CLIENT_SECRET
+  const redirectUri = import.meta.env.VITE_REDIRECT_URI
+  const credentials = btoa(`${clientId}:${clientSecret}`)
+
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: redirectUri
+  })
+
+  return axios.post(`${API_BASE_URL}/oauth2/token`, body.toString(), {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${credentials}`
+    }
+  })
+}
+
+// auth-server(:8080)의 폼 로그인 엔드포인트에 자격증명을 제출해 세션 쿠키(JSESSIONID)를 만든다.
+// 공용 api 인스턴스를 쓰지 않는 이유: 그 인스턴스는 Content-Type을 JSON으로 고정하고
+// Authorization: Bearer 헤더를 자동으로 붙이는데, 둘 다 이 요청에는 맞지 않는다.
+
+// 내 정보 조회 (게이트웨이가 토큰에서 뽑은 X-User-Id로 사용자를 식별)
+export function getMe() {
+  return api.get('/api/users/me')
+}
+
+// 회원가입
+export function register(data) {
+  return api.post('/api/users/register', data)
+}

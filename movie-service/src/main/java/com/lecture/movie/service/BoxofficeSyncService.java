@@ -6,6 +6,7 @@ import com.lecture.movie.entity.Movie;
 import com.lecture.movie.external.KobisClient;
 import com.lecture.movie.external.TmdbClient;
 import com.lecture.movie.external.dto.KobisBoxofficeItem;
+import com.lecture.movie.external.dto.KobisMovieItem;
 import com.lecture.movie.external.dto.TmdbMovie;
 import com.lecture.movie.repository.BoxofficeRankingRepository;
 import com.lecture.movie.repository.MovieRepository;
@@ -100,11 +101,44 @@ public class BoxofficeSyncService {
 
     private void enrichWithTmdb(Movie movie, KobisBoxofficeItem item) {
         Integer releaseYear = item.getOpenDt() != null ? item.getOpenDt().getYear() : null;
+        enrichWithTmdb(movie, item.getMovieNm(), releaseYear, item.getMovieCd());
+    }
 
-        Optional<TmdbMovie> found = tmdbClient.search(item.getMovieNm(), releaseYear);
+    /**
+     * 검색(searchMovieList) 결과를 movies 에 upsert 한다.
+     * 박스오피스 수치가 없으므로 audienceAcc 는 기본값(0)을 그대로 둔다.
+     *
+     * MovieService.searchMovies() 는 @Transactional(propagation = Propagation.NOT_SUPPORTED) 로
+     * 주변 읽기 트랜잭션을 없애 호출하므로 sync() 와 동일한 REQUIRES_NEW 격리 이유가 적용되지는
+     * 않지만, 이 메서드 자체가 여러 건을 upsert 하는 하나의 단위이므로 REQUIRES_NEW 로 묶어
+     * 부분 실패 시에도 독립적인 쓰기 트랜잭션을 보장한다.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<Movie> upsertSearchResults(List<KobisMovieItem> items) {
+        List<Movie> result = new ArrayList<>();
+        for (KobisMovieItem item : items) {
+            Movie movie = movieRepository.findByMovieCd(item.getMovieCd())
+                    .orElseGet(() -> Movie.builder()
+                            .movieCd(item.getMovieCd())
+                            .title(item.getMovieNm())
+                            .originalTitle(item.getMovieNmEn())
+                            .openDt(item.getOpenDt())
+                            .build());
+
+            if (movie.getTmdbId() == null) {
+                Integer releaseYear = item.getOpenDt() != null ? item.getOpenDt().getYear() : null;
+                enrichWithTmdb(movie, item.getMovieNm(), releaseYear, item.getMovieCd());
+            }
+
+            result.add(movieRepository.save(movie));
+        }
+        return result;
+    }
+
+    private void enrichWithTmdb(Movie movie, String title, Integer releaseYear, String movieCd) {
+        Optional<TmdbMovie> found = tmdbClient.search(title, releaseYear);
         if (found.isEmpty()) {
-            log.warn("[BoxofficeSync] TMDB 매칭 실패 - movieCd: {}, title: {}",
-                    item.getMovieCd(), item.getMovieNm());
+            log.warn("[BoxofficeSync] TMDB 매칭 실패 - movieCd: {}, title: {}", movieCd, title);
             return;
         }
 
@@ -119,6 +153,6 @@ public class BoxofficeSyncService {
                 tmdb.getVoteAverage());
 
         log.info("[BoxofficeSync] TMDB 보강 완료 - movieCd: {}, tmdbId: {}, genre: {}",
-                item.getMovieCd(), tmdb.getTmdbId(), tmdb.getGenre());
+                movieCd, tmdb.getTmdbId(), tmdb.getGenre());
     }
 }
