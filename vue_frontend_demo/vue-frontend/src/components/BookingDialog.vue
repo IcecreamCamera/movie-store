@@ -36,51 +36,69 @@
             </div>
 
             <div class="p-6 border-b border-hairline">
-              <div class="grid grid-cols-2 gap-3">
-                <div
-                  v-for="snack in snacks"
-                  :key="snack.id"
-                  class="rounded-lg border p-3 transition-colors"
-                  :class="picked[snack.id]
-                    ? 'bg-brand-dim border-brand'
-                    : 'bg-surface-2 border-hairline'"
-                >
-                  <button
-                    type="button"
-                    class="w-full text-left cursor-pointer"
-                    :aria-pressed="!!picked[snack.id]"
-                    @click="toggle(snack)"
-                  >
-                    <div class="flex items-center justify-between gap-2 mb-2">
-                      <span class="font-medium text-foreground text-sm">{{ snack.name }}</span>
-                      <span class="shrink-0 rounded px-1.5 py-0.5 text-xs bg-brand-dim text-brand">
-                        {{ snack.taste }}
-                      </span>
-                    </div>
-                    <div class="text-sm text-brand">{{ snack.price.toLocaleString() }}원</div>
-                  </button>
+              <!-- 추천 로딩 -->
+              <div v-if="snacksLoading" class="py-6 text-center text-dim text-sm">
+                추천 간식을 불러오는 중...
+              </div>
 
-                  <!-- 담은 간식만 수량 조절 -->
-                  <div v-if="picked[snack.id]" class="flex items-center justify-end gap-2 mt-3">
+              <!-- 추천 없음 -->
+              <div v-else-if="snacks.length === 0" class="py-6 text-center text-dim text-sm">
+                추천할 간식이 없어요.
+              </div>
+
+              <template v-else>
+                <p v-if="snacksError" class="text-xs text-faint mb-3">
+                  맞춤 추천을 불러오지 못해 인기 간식을 대신 보여드려요.
+                </p>
+                <div class="grid grid-cols-2 gap-3">
+                  <div
+                    v-for="snack in snacks"
+                    :key="snack.id"
+                    class="rounded-lg border p-3 transition-colors"
+                    :class="picked[snack.id]
+                      ? 'bg-brand-dim border-brand'
+                      : 'bg-surface-2 border-hairline'"
+                  >
                     <button
                       type="button"
-                      class="w-7 h-7 rounded-full border border-hairline text-foreground hover:bg-surface transition-colors cursor-pointer"
-                      :aria-label="`${snack.name} 수량 줄이기`"
-                      @click="dec(snack)"
-                    >−</button>
-                    <span class="w-6 text-center text-sm font-semibold text-foreground">
-                      {{ picked[snack.id] }}
-                    </span>
-                    <button
-                      type="button"
-                      class="w-7 h-7 rounded-full border border-hairline text-foreground hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                      :disabled="picked[snack.id] >= 9"
-                      :aria-label="`${snack.name} 수량 늘리기`"
-                      @click="inc(snack)"
-                    >+</button>
+                      class="w-full text-left cursor-pointer"
+                      :aria-pressed="!!picked[snack.id]"
+                      @click="toggle(snack)"
+                    >
+                      <div class="flex items-center justify-between gap-2 mb-2">
+                        <span class="font-medium text-foreground text-sm">{{ snack.name }}</span>
+                        <span class="shrink-0 rounded px-1.5 py-0.5 text-xs bg-brand-dim text-brand">
+                          {{ snack.taste }}
+                        </span>
+                      </div>
+                      <div class="text-sm text-brand">{{ snack.price.toLocaleString() }}원</div>
+                      <p v-if="snack.reason" class="text-xs text-faint mt-1.5 leading-snug">
+                        {{ snack.reason }}
+                      </p>
+                    </button>
+
+                    <!-- 담은 간식만 수량 조절 -->
+                    <div v-if="picked[snack.id]" class="flex items-center justify-end gap-2 mt-3">
+                      <button
+                        type="button"
+                        class="w-7 h-7 rounded-full border border-hairline text-foreground hover:bg-surface transition-colors cursor-pointer"
+                        :aria-label="`${snack.name} 수량 줄이기`"
+                        @click="dec(snack)"
+                      >−</button>
+                      <span class="w-6 text-center text-sm font-semibold text-foreground">
+                        {{ picked[snack.id] }}
+                      </span>
+                      <button
+                        type="button"
+                        class="w-7 h-7 rounded-full border border-hairline text-foreground hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                        :disabled="picked[snack.id] >= 9"
+                        :aria-label="`${snack.name} 수량 늘리기`"
+                        @click="inc(snack)"
+                      >+</button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </template>
             </div>
 
             <!-- 합계 -->
@@ -205,11 +223,13 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Check, X, CreditCard } from '@lucide/vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { recommendByGenre } from '@/data/snacks'
+import * as recommendApi from '@/api/recommend.js'
+import { user, isLoggedIn } from '@/store/auth'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -224,15 +244,59 @@ const props = defineProps({
 const emit = defineEmits(['close', 'confirm'])
 const router = useRouter()
 
-// TODO: GET /api/recommend/{userId}?movieId={movie.id} 로 교체.
-// 지금은 snacks.js의 장르 매핑으로 프론트에서 고른다.
-const snacks = computed(() => recommendByGenre(props.movie?.genre))
+// recommend-service의 Food -> 화면에서 쓰는 모양으로 정리한다.
+// Food엔 description이 없고 taste는 배열([sweet, crunchy] 등)이라 뱃지에 맞게 이어붙인다.
+function mapFood(f) {
+  return {
+    id: f.id,
+    name: f.name,
+    price: Number(f.price ?? 0),
+    taste: Array.isArray(f.taste) ? f.taste.join(', ') : (f.taste ?? ''),
+    reason: f.reason || null
+  }
+}
+
+const snacks = ref([])
+const snacksLoading = ref(false)
+const snacksError = ref('')
+
+// GET /api/recommend/{userId}?movie_id={movieId}&limit=3
+// movie_id는 필수이고 JWT가 있어야 한다. 실패하면(로그인 안 함, 추천 실패 등)
+// 매점 섹션이 통째로 사라지는 것보다 나으니 snacks.js 장르 매핑으로 대체한다.
+async function loadSnacks() {
+  snacksLoading.value = true
+  snacksError.value = ''
+  try {
+    if (!isLoggedIn.value || !user.value?.id) {
+      throw new Error('로그인이 필요합니다.')
+    }
+    if (!props.movie?.id) {
+      throw new Error('영화 정보가 없습니다.')
+    }
+    const res = await recommendApi.recommend(user.value.id, props.movie.id, 3)
+    const data = res?.data?.data ?? res?.data
+    const foods = Array.isArray(data?.recommendedFoods) ? data.recommendedFoods : []
+    if (foods.length === 0) {
+      throw new Error('추천 결과가 없습니다.')
+    }
+    snacks.value = foods.map(mapFood)
+  } catch (err) {
+    snacksError.value =
+      err?.response?.data?.message || err?.message || '추천을 불러오지 못했습니다.'
+    snacks.value = recommendByGenre(props.movie?.genre)
+  } finally {
+    snacksLoading.value = false
+  }
+}
 
 // { 간식id: 수량 }
 const picked = ref({})
 
-// 다시 열 때마다 장바구니를 비운다.
-watch(() => props.open, (isOpen) => { if (isOpen) picked.value = {} })
+// 다시 열 때마다 장바구니를 비우고 추천을 새로 받는다.
+watch(() => props.open, (isOpen) => {
+  picked.value = {}
+  if (isOpen) loadSnacks()
+})
 
 function toggle(snack) {
   const next = { ...picked.value }
