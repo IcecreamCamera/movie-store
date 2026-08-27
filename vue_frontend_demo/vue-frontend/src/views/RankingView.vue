@@ -1,28 +1,28 @@
 <template>
-  <div class="min-h-screen" style="background-color: #ffffff">
+  <div class="min-h-screen bg-background">
     <!-- 공통 헤더 -->
     <AppHeader current-page="ranking" />
 
     <!-- 페이지 제목 -->
-    <div style="background-color: #e4e4e4">
+    <div class="bg-surface border-b border-hairline">
       <div class="max-w-7xl mx-auto px-8 lg:px-16 py-6">
         <div class="flex items-center gap-3">
-          <TrendingUp class="h-6 w-6 text-red-600" />
-          <h1 class="text-2xl font-bold text-black">영화 랭킹</h1>
+          <TrendingUp class="h-6 w-6 text-brand" />
+          <h1 class="text-2xl font-bold text-foreground">영화 랭킹</h1>
         </div>
-        <p class="text-black/70 mt-2">실시간 업데이트되는 영화 순위를 확인하세요</p>
+        <p class="text-dim mt-2">실시간 업데이트되는 영화 순위를 확인하세요</p>
       </div>
     </div>
 
     <div class="max-w-7xl mx-auto px-8 lg:px-16 py-8">
       <!-- VS 섹션 - 1위 vs 2위 -->
       <div class="mb-12">
-        <div class="bg-gray-100/50 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-gray-200/30">
+        <div class="bg-surface/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-hairline">
           <div class="text-center mb-8">
-            <h2 class="text-3xl font-bold text-gray-800 mb-3">최고 평점 대결</h2>
-            <p class="text-gray-600 text-lg">이번 주 최고 평점 영화들의 투표 현황</p>
+            <h2 class="text-3xl font-bold text-foreground mb-3">최고 평점 대결</h2>
+            <p class="text-dim text-lg">이번 주 최고 평점 영화들의 투표 현황</p>
             <div class="mt-4">
-              <p class="text-gray-500">총 {{ totalVotes.toLocaleString() }}명이 참여</p>
+              <p class="text-faint">총 {{ totalVotes.toLocaleString() }}명이 참여</p>
             </div>
           </div>
 
@@ -55,39 +55,39 @@
                 </div>
               </div>
 
-              <h3 class="font-bold text-xl text-gray-800 mb-2 group-hover:text-red-500 transition-colors">
+              <h3 class="font-bold text-xl text-foreground mb-2 group-hover:text-brand transition-colors">
                 {{ topMovie.title }}
               </h3>
-              <p class="text-gray-600 mb-2">{{ topMovie.director }}</p>
+              <p class="text-dim mb-2">{{ topMovie.director }}</p>
               <div class="flex items-center justify-center gap-1 mb-3">
                 <Star class="h-5 w-5 text-yellow-400 fill-current" />
-                <span class="font-semibold text-xl text-gray-800">{{ topMovie.rating.toFixed(1) }}</span>
+                <span class="font-semibold text-xl text-foreground">{{ topMovie.rating.toFixed(1) }}</span>
               </div>
 
               <!-- 투표 결과 -->
               <div class="bg-yellow-600/20 rounded-lg p-4 border border-yellow-500/30">
-                <div class="font-bold text-xl mb-1" style="color: #000000">{{ topMoviePercentage }}%</div>
-                <div class="text-sm" style="color: #000000">{{ topMovieVotes.toLocaleString() }}표</div>
+                <div class="font-bold text-xl mb-1 text-foreground">{{ topMoviePercentage }}%</div>
+                <div class="text-sm text-foreground">{{ topMovieVotes.toLocaleString() }}표</div>
               </div>
             </div>
 
             <!-- VS 텍스트 -->
             <div class="flex flex-col items-center">
               <div
-                class="w-20 h-20 bg-gradient-to-br from-red-600 to-red-700 rounded-full flex items-center justify-center shadow-2xl mb-3"
+                class="w-20 h-20 bg-gradient-to-br from-brand to-brand-hover rounded-full flex items-center justify-center shadow-2xl mb-3"
               >
                 <span class="text-white font-bold text-2xl">VS</span>
               </div>
-              <p class="text-gray-600 mb-3">대결</p>
+              <p class="text-dim mb-3">대결</p>
 
               <!-- 투표 진행률 표시 -->
-              <div class="w-40 bg-gray-700 rounded-full h-4 mb-2">
+              <div class="w-40 bg-surface-2 rounded-full h-4 mb-2">
                 <div
                   class="bg-gradient-to-r from-yellow-400 to-yellow-500 h-4 rounded-full transition-all duration-300"
                   :style="{ width: topMoviePercentage + '%' }"
                 ></div>
               </div>
-              <p class="text-xs text-gray-500">실시간 투표</p>
+              <p class="text-xs text-faint">실시간 투표</p>
             </div>
 
             <!-- 2위 영화 -->
@@ -106,7 +106,7 @@
                 <!-- 2위 배지 -->
                 <div class="absolute -top-3 -left-3">
                   <div
-                    class="w-12 h-12 bg-gradient-to-br from-gray-300 to-gray-500 rounded-full flex items-center justify-center shadow-lg"
+                    class="w-12 h-12 bg-gradient-to-br from-surface-2 to-surface rounded-full flex items-center justify-center shadow-lg"
                   >
                     <Medal class="h-6 w-6 text-white" />
                   </div>
@@ -114,34 +114,34 @@
 
                 <!-- 순위 표시 -->
                 <div class="absolute -bottom-3 left-1/2 transform -translate-x-1/2">
-                  <BaseBadge class="bg-gray-400 text-white font-bold text-lg px-3 py-1">2위</BaseBadge>
+                  <BaseBadge class="bg-surface-2 text-white font-bold text-lg px-3 py-1">2위</BaseBadge>
                 </div>
               </div>
 
-              <h3 class="font-bold text-xl text-gray-800 mb-2 group-hover:text-red-500 transition-colors">
+              <h3 class="font-bold text-xl text-foreground mb-2 group-hover:text-brand transition-colors">
                 {{ secondMovie.title }}
               </h3>
-              <p class="text-gray-600 mb-2">{{ secondMovie.director }}</p>
+              <p class="text-dim mb-2">{{ secondMovie.director }}</p>
               <div class="flex items-center justify-center gap-1 mb-3">
                 <Star class="h-5 w-5 text-yellow-400 fill-current" />
-                <span class="font-semibold text-xl text-gray-800">{{ secondMovie.rating.toFixed(1) }}</span>
+                <span class="font-semibold text-xl text-foreground">{{ secondMovie.rating.toFixed(1) }}</span>
               </div>
 
               <!-- 투표 결과 -->
-              <div class="bg-gray-300/50 rounded-lg p-4 border border-gray-400">
-                <div class="font-bold text-xl mb-1" style="color: #000000">{{ secondMoviePercentage }}%</div>
-                <div class="text-sm" style="color: #000000">{{ secondMovieVotes.toLocaleString() }}표</div>
+              <div class="bg-surface-2 rounded-lg p-4 border border-hairline">
+                <div class="font-bold text-xl mb-1 text-foreground">{{ secondMoviePercentage }}%</div>
+                <div class="text-sm text-foreground">{{ secondMovieVotes.toLocaleString() }}표</div>
               </div>
             </div>
           </div>
 
           <!-- 투표 참여 안내 -->
           <div class="mt-8 text-center">
-            <div class="bg-red-600/20 rounded-xl p-4 inline-block border border-red-500/30">
-              <p class="text-red-400">
+            <div class="bg-surface-2 rounded-xl p-4 inline-block border border-hairline">
+              <p class="text-brand">
                 🗳️ <span class="font-semibold">투표는 매주 월요일 초기화됩니다</span>
               </p>
-              <p class="text-red-300 text-sm mt-1">다음 투표는 2일 후 시작됩니다</p>
+              <p class="text-faint text-sm mt-1">다음 투표는 2일 후 시작됩니다</p>
             </div>
           </div>
         </div>
@@ -150,15 +150,15 @@
       <!-- 박스오피스 TOP 10 - 가로 슬라이드 -->
       <div class="mb-12">
         <div
-          class="bg-gradient-to-b from-gray-100/80 to-gray-200/60 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg"
+          class="bg-gradient-to-b from-surface to-surface-2 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg"
         >
-          <div class="bg-gradient-to-r from-red-600 to-red-700 p-6">
+          <div class="bg-gradient-to-r from-surface-2 to-surface p-6">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
                 <Trophy class="h-7 w-7 text-white" />
                 <div>
                   <h3 class="text-2xl font-bold text-white">박스오피스 TOP 10</h3>
-                  <p class="text-red-100">별점 합계 기준</p>
+                  <p class="text-dim">별점 합계 기준</p>
                 </div>
               </div>
 
@@ -188,7 +188,7 @@
               <div
                 v-for="movie in currentSlideMovies"
                 :key="movie.id"
-                class="group cursor-pointer bg-white/80 rounded-lg p-4 hover:bg-white/90 transition-all duration-300 hover:scale-105 shadow-sm border border-gray-300"
+                class="group cursor-pointer bg-surface rounded-lg p-4 hover:bg-surface-2 transition-all duration-300 hover:scale-105 shadow-sm border border-hairline"
                 @click="openMovie(movie)"
               >
                 <div class="relative mb-4">
@@ -214,7 +214,7 @@
                   <div v-if="movie.rank <= 3" class="absolute -top-2 -right-2">
                     <div class="w-8 h-8 bg-black/70 rounded-full flex items-center justify-center">
                       <Crown v-if="movie.rank === 1" class="h-5 w-5 text-yellow-500" />
-                      <Medal v-else-if="movie.rank === 2" class="h-5 w-5 text-gray-400" />
+                      <Medal v-else-if="movie.rank === 2" class="h-5 w-5 text-faint" />
                       <Trophy v-else class="h-5 w-5 text-orange-500" />
                     </div>
                   </div>
@@ -222,16 +222,16 @@
 
                 <div>
                   <h4
-                    class="font-semibold text-gray-800 mb-1 line-clamp-2 group-hover:text-red-500 transition-colors"
+                    class="font-semibold text-foreground mb-1 line-clamp-2 group-hover:text-brand transition-colors"
                   >
                     {{ movie.title }}
                   </h4>
-                  <p class="text-sm text-gray-600 mb-2 line-clamp-1">{{ movie.director }}</p>
+                  <p class="text-sm text-dim mb-2 line-clamp-1">{{ movie.director }}</p>
                   <div class="flex items-center gap-2">
                     <Star class="h-4 w-4 text-yellow-400 fill-current" />
-                    <span class="text-sm font-medium text-gray-800">{{ movie.rating.toFixed(1) }}</span>
-                    <span class="text-sm text-gray-500">•</span>
-                    <span class="text-sm text-gray-500">{{ movie.year }}</span>
+                    <span class="text-sm font-medium text-foreground">{{ movie.rating.toFixed(1) }}</span>
+                    <span class="text-sm text-faint">•</span>
+                    <span class="text-sm text-faint">{{ movie.year }}</span>
                   </div>
                 </div>
               </div>
@@ -243,14 +243,14 @@
       <!-- 이번주 화제작 - 가로 스크롤 -->
       <div class="mb-12">
         <div
-          class="bg-gradient-to-b from-gray-100/80 to-gray-200/60 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg"
+          class="bg-gradient-to-b from-surface to-surface-2 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg"
         >
-          <div class="bg-gradient-to-r from-purple-600 to-purple-700 p-6">
+          <div class="bg-gradient-to-r from-brand to-brand-hover p-6">
             <div class="flex items-center gap-3">
               <TrendingUp class="h-7 w-7 text-white" />
               <div>
                 <h3 class="text-2xl font-bold text-white">이번주 화제작</h3>
-                <p class="text-purple-100">트렌딩 지수 기준</p>
+                <p class="text-[#1A1408]">트렌딩 지수 기준</p>
               </div>
             </div>
           </div>
@@ -274,7 +274,7 @@
 
                   <!-- HOT 배지 -->
                   <div class="absolute top-3 left-3">
-                    <div class="bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                    <div class="bg-brand text-[#1A1408] px-3 py-1 rounded-full text-xs font-bold shadow-lg">
                       HOT
                     </div>
                   </div>
@@ -302,36 +302,36 @@
 
                 <div class="mt-4 w-48">
                   <h4
-                    class="font-semibold text-gray-800 text-sm line-clamp-2 group-hover:text-purple-500 transition-colors mb-2"
+                    class="font-semibold text-foreground text-sm line-clamp-2 group-hover:text-brand transition-colors mb-2"
                   >
                     {{ movie.title }}
                   </h4>
-                  <p class="text-xs text-gray-600 line-clamp-1 mb-2">{{ movie.director }}</p>
+                  <p class="text-xs text-dim line-clamp-1 mb-2">{{ movie.director }}</p>
 
                   <!-- 트렌딩 지표 -->
                   <div class="flex items-center justify-between text-xs">
-                    <span class="text-purple-400 font-medium">+{{ movie.buzz }}%</span>
-                    <span class="text-gray-500">화제성</span>
+                    <span class="text-brand font-medium">+{{ movie.buzz }}%</span>
+                    <span class="text-faint">화제성</span>
                   </div>
                 </div>
               </div>
             </div>
 
             <!-- 화제성 통계 -->
-            <div class="mt-8 pt-6 border-t border-gray-300">
-              <h4 class="font-semibold text-gray-800 mb-4">실시간 화제성 지표</h4>
+            <div class="mt-8 pt-6 border-t border-hairline">
+              <h4 class="font-semibold text-foreground mb-4">실시간 화제성 지표</h4>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div
                   v-for="stat in buzzStats"
                   :key="stat.label"
-                  class="bg-white/80 rounded-lg p-4 border border-gray-300 shadow-sm"
+                  class="bg-surface rounded-lg p-4 border border-hairline shadow-sm"
                 >
                   <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm text-gray-600">{{ stat.label }}</span>
-                    <span class="text-sm font-bold text-purple-500">{{ stat.value }}</span>
+                    <span class="text-sm text-dim">{{ stat.label }}</span>
+                    <span class="text-sm font-bold text-brand">{{ stat.value }}</span>
                   </div>
-                  <div class="w-full bg-gray-300 rounded-full h-2">
-                    <div class="bg-purple-500 h-2 rounded-full" :style="{ width: stat.width }"></div>
+                  <div class="w-full bg-surface-2 rounded-full h-2">
+                    <div class="bg-brand h-2 rounded-full" :style="{ width: stat.width }"></div>
                   </div>
                 </div>
               </div>
@@ -342,11 +342,11 @@
 
       <!-- 랭킹 정보 -->
       <div class="mt-8 text-center">
-        <div class="bg-gray-100/50 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/30">
-          <p class="text-gray-700 mb-2">
+        <div class="bg-surface/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-hairline">
+          <p class="text-dim mb-2">
             <span class="font-semibold">📊 랭킹 기준:</span> 평점, 관객수, 리뷰 점수를 종합하여 산정
           </p>
-          <p class="text-gray-600 text-sm">매일 오전 6시에 업데이트됩니다.</p>
+          <p class="text-dim text-sm">매일 오전 6시에 업데이트됩니다.</p>
         </div>
       </div>
     </div>
@@ -408,9 +408,9 @@ function openMovie(movie) {
 
 function rankBg(rank) {
   if (rank === 1) return 'bg-yellow-500'
-  if (rank === 2) return 'bg-gray-400'
+  if (rank === 2) return 'bg-surface-2'
   if (rank === 3) return 'bg-orange-500'
-  return 'bg-gray-500'
+  return 'bg-surface-2'
 }
 
 // VS 대결용 투표 수 (원본과 동일한 고정값)

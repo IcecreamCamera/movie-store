@@ -17,7 +17,7 @@
             v-for="item in navItems"
             :key="item.key"
             class="font-medium transition-colors cursor-pointer"
-            :class="isActive(item.key) ? 'text-red-500' : 'text-white/80 hover:text-white'"
+            :class="isActive(item.key) ? 'text-white font-semibold' : 'text-white/55 hover:text-white/90'"
             @click="go(item.key)"
           >
             {{ item.label }}
@@ -35,7 +35,7 @@
               v-model="searchQuery"
               type="text"
               placeholder="영화 제목, 감독, 배우를 검색하세요"
-              class="pl-10 bg-gray-900/50 border-gray-700 focus:border-red-500 text-white placeholder:text-white/50"
+              class="pl-10 bg-gray-900/50 border-gray-700 focus:border-brand text-white placeholder:text-white/50"
               @keydown.enter="submitSearch"
             />
           </form>

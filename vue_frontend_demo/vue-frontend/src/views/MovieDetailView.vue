@@ -1,16 +1,16 @@
 <template>
-  <div class="min-h-screen" style="background-color: #ffffff">
+  <div class="min-h-screen bg-background">
     <!-- 공통 헤더 -->
     <AppHeader current-page="movie-detail" />
 
     <!-- 페이지 제목 헤더 -->
-    <div style="background-color: #e4e4e4">
+    <div class="bg-surface border-b border-hairline">
       <div class="max-w-7xl mx-auto px-8 lg:px-16 py-6">
         <div class="flex items-center gap-3">
-          <Film class="h-6 w-6 text-red-600" />
-          <h1 class="text-2xl font-bold text-black">영화 상세정보</h1>
+          <Film class="h-6 w-6 text-brand" />
+          <h1 class="text-2xl font-bold text-foreground">영화 상세정보</h1>
         </div>
-        <p class="text-black/70 mt-2">{{ movie.title }}의 상세 정보를 확인하세요</p>
+        <p class="text-dim mt-2">{{ movie.title }}의 상세 정보를 확인하세요</p>
       </div>
     </div>
 
@@ -19,7 +19,7 @@
       <div class="mb-6">
         <BaseButton
           variant="ghost"
-          class="text-gray-600 hover:text-black hover:bg-gray-100 -ml-2"
+          class="text-dim hover:text-brand hover:bg-surface-2 -ml-2"
           @click="goBack"
         >
           <ArrowLeft class="h-5 w-5 mr-2" />
@@ -31,7 +31,7 @@
         <!-- 메인 콘텐츠 -->
         <div class="lg:col-span-3 space-y-8">
           <!-- 영화 기본 정보 + 줄거리 + 출연진 -->
-          <div class="bg-gradient-to-b from-gray-100/80 to-gray-200/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+          <div class="bg-gradient-to-b from-surface to-surface-2 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
             <div class="flex flex-col md:flex-row gap-8 mb-8">
               <!-- 포스터 -->
               <div class="flex-shrink-0">
@@ -47,44 +47,44 @@
               <!-- 영화 정보 + 줄거리 -->
               <div class="flex-1">
                 <div class="flex items-center gap-3 mb-4">
-                  <BaseBadge class="bg-red-100 text-red-700">{{ movie.year }}년 작품</BaseBadge>
+                  <BaseBadge class="bg-brand-dim text-brand">{{ movie.year }}년 작품</BaseBadge>
                   <BaseBadge variant="outline">{{ movie.genre }}</BaseBadge>
                 </div>
 
-                <h1 class="text-4xl font-bold text-black mb-4">{{ movie.title }}</h1>
-                <p class="text-xl text-gray-700 mb-6">감독: {{ movie.director }}</p>
+                <h1 class="text-4xl font-bold text-foreground mb-4">{{ movie.title }}</h1>
+                <p class="text-xl text-dim mb-6">감독: {{ movie.director }}</p>
 
                 <div class="grid grid-cols-2 gap-6 mb-8">
                   <div class="flex items-center gap-2">
                     <Star class="h-5 w-5 text-yellow-400 fill-current" />
                     <span class="font-semibold">{{ movie.rating.toFixed(1) }}</span>
-                    <span class="text-gray-500">(3,847명 평가)</span>
+                    <span class="text-faint">(3,847명 평가)</span>
                   </div>
                   <div class="flex items-center gap-2">
-                    <Clock class="h-5 w-5 text-gray-400" />
+                    <Clock class="h-5 w-5 text-faint" />
                     <span>{{ movie.runtime }}분</span>
                   </div>
                   <div class="flex items-center gap-2">
-                    <Calendar class="h-5 w-5 text-gray-400" />
+                    <Calendar class="h-5 w-5 text-faint" />
                     <span>{{ movie.year }}년 개봉</span>
                   </div>
                   <div class="flex items-center gap-2">
-                    <Users class="h-5 w-5 text-gray-400" />
+                    <Users class="h-5 w-5 text-faint" />
                     <span>15세 이상 관람가</span>
                   </div>
                 </div>
 
                 <!-- 줄거리 -->
                 <div class="mb-6">
-                  <h3 class="text-lg font-semibold text-black mb-3">줄거리</h3>
-                  <p class="text-gray-700 leading-relaxed">{{ movie.description || DEFAULT_PLOT }}</p>
+                  <h3 class="text-lg font-semibold text-foreground mb-3">줄거리</h3>
+                  <p class="text-dim leading-relaxed">{{ movie.description || DEFAULT_PLOT }}</p>
                 </div>
               </div>
             </div>
 
             <!-- 출연진 -->
             <div>
-              <h3 class="text-lg font-semibold text-black mb-4">주요 출연진</h3>
+              <h3 class="text-lg font-semibold text-foreground mb-4">주요 출연진</h3>
               <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div v-for="actor in cast" :key="actor.id" class="flex items-center gap-3">
                   <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow-md">
@@ -95,8 +95,8 @@
                     />
                   </div>
                   <div class="min-w-0 flex-1">
-                    <h4 class="font-semibold text-black text-sm truncate">{{ actor.name }}</h4>
-                    <p class="text-xs text-gray-600 truncate">{{ actor.character }}</p>
+                    <h4 class="font-semibold text-foreground text-sm truncate">{{ actor.name }}</h4>
+                    <p class="text-xs text-dim truncate">{{ actor.character }}</p>
                   </div>
                 </div>
               </div>
@@ -104,36 +104,36 @@
           </div>
 
           <!-- OST 섹션 -->
-          <div class="bg-gradient-to-b from-gray-100/80 to-gray-200/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+          <div class="bg-gradient-to-b from-surface to-surface-2 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
             <div class="flex items-center gap-3 mb-6">
-              <Volume2 class="h-6 w-6 text-purple-600" />
-              <h2 class="text-2xl font-bold text-black">OST</h2>
+              <Volume2 class="h-6 w-6 text-brand" />
+              <h2 class="text-2xl font-bold text-foreground">OST</h2>
             </div>
             <div class="space-y-3">
               <div
                 v-for="track in ostTracks"
                 :key="track.id"
-                class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-2 transition-colors cursor-pointer"
               >
                 <div class="flex items-center gap-4">
-                  <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Play class="h-4 w-4 text-purple-600" />
+                  <div class="w-8 h-8 bg-brand-dim rounded-full flex items-center justify-center">
+                    <Play class="h-4 w-4 text-brand" />
                   </div>
                   <div>
-                    <h4 class="font-medium text-black">{{ track.title }}</h4>
-                    <p class="text-sm text-gray-600">{{ track.artist }}</p>
+                    <h4 class="font-medium text-foreground">{{ track.title }}</h4>
+                    <p class="text-sm text-dim">{{ track.artist }}</p>
                   </div>
                 </div>
-                <span class="text-gray-500 text-sm">{{ track.duration }}</span>
+                <span class="text-faint text-sm">{{ track.duration }}</span>
               </div>
             </div>
           </div>
 
           <!-- 예고편 & 영상 섹션 -->
-          <div class="bg-gradient-to-b from-gray-100/80 to-gray-200/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+          <div class="bg-gradient-to-b from-surface to-surface-2 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
             <div class="flex items-center gap-3 mb-6">
-              <Film class="h-6 w-6 text-red-600" />
-              <h2 class="text-2xl font-bold text-black">예고편 &amp; 영상</h2>
+              <Film class="h-6 w-6 text-brand" />
+              <h2 class="text-2xl font-bold text-foreground">예고편 &amp; 영상</h2>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div v-for="trailer in trailers" :key="trailer.id" class="group cursor-pointer">
@@ -144,22 +144,22 @@
                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
-                    <div class="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center">
-                      <Play class="h-6 w-6 text-gray-800 ml-1" />
+                    <div class="w-12 h-12 bg-surface-2 rounded-full flex items-center justify-center">
+                      <Play class="h-6 w-6 text-foreground ml-1" />
                     </div>
                   </div>
                   <div class="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                     {{ trailer.duration }}
                   </div>
                 </div>
-                <h4 class="font-medium text-black text-sm">{{ trailer.title }}</h4>
+                <h4 class="font-medium text-foreground text-sm">{{ trailer.title }}</h4>
               </div>
             </div>
           </div>
 
           <!-- 비슷한 키워드 영화 추천 -->
-          <div class="bg-gradient-to-b from-gray-100/80 to-gray-200/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
-            <h2 class="text-2xl font-bold text-black mb-6">비슷한 키워드 영화</h2>
+          <div class="bg-gradient-to-b from-surface to-surface-2 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+            <h2 class="text-2xl font-bold text-foreground mb-6">비슷한 키워드 영화</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div v-for="km in keywordMovies" :key="km.id" class="group cursor-pointer">
                 <div
@@ -172,12 +172,12 @@
                   />
                 </div>
                 <h4
-                  class="font-semibold text-black text-sm mb-1 group-hover:text-blue-600 transition-colors"
+                  class="font-semibold text-foreground text-sm mb-1 group-hover:text-brand transition-colors"
                 >
                   {{ km.title }}
                 </h4>
                 <div class="flex items-center justify-between">
-                  <span class="text-gray-500 text-xs">{{ km.year }}년</span>
+                  <span class="text-faint text-xs">{{ km.year }}년</span>
                   <div class="flex items-center gap-1">
                     <Star class="h-3 w-3 text-yellow-400 fill-current" />
                     <span class="text-yellow-600 text-xs font-medium">{{ km.rating }}</span>
@@ -190,8 +190,8 @@
 
         <!-- 사이드바 - 관련 기사 -->
         <div class="lg:col-span-1">
-          <div class="bg-gradient-to-b from-gray-100/80 to-gray-200/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
-            <h3 class="font-bold text-lg text-black mb-6">관련 기사</h3>
+          <div class="bg-gradient-to-b from-surface to-surface-2 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+            <h3 class="font-bold text-lg text-foreground mb-6">관련 기사</h3>
             <div class="space-y-6">
               <div v-for="article in relatedArticles" :key="article.id" class="group cursor-pointer">
                 <div class="aspect-video rounded-lg overflow-hidden mb-3">
@@ -202,11 +202,11 @@
                   />
                 </div>
                 <h4
-                  class="font-medium text-black text-sm mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors"
+                  class="font-medium text-foreground text-sm mb-2 line-clamp-2 group-hover:text-brand transition-colors"
                 >
                   {{ article.title }}
                 </h4>
-                <div class="flex items-center justify-between text-xs text-gray-500">
+                <div class="flex items-center justify-between text-xs text-faint">
                   <span>{{ article.source }}</span>
                   <span>{{ article.date }}</span>
                 </div>
