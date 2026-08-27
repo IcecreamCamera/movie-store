@@ -76,7 +76,7 @@
               <div
                 class="w-20 h-20 bg-gradient-to-br from-brand to-brand-hover rounded-full flex items-center justify-center shadow-2xl mb-3"
               >
-                <span class="text-white font-bold text-2xl">VS</span>
+                <span class="text-[#1A1408] font-bold text-2xl">VS</span>
               </div>
               <p class="text-dim mb-3">대결</p>
 
@@ -139,7 +139,7 @@
           <div class="mt-8 text-center">
             <div class="bg-surface-2 rounded-xl p-4 inline-block border border-hairline">
               <p class="text-brand">
-                🗳️ <span class="font-semibold">투표는 매주 월요일 초기화됩니다</span>
+                <span class="font-semibold">투표는 매주 월요일 초기화됩니다</span>
               </p>
               <p class="text-faint text-sm mt-1">다음 투표는 2일 후 시작됩니다</p>
             </div>
@@ -150,15 +150,15 @@
       <!-- 박스오피스 TOP 10 - 가로 슬라이드 -->
       <div class="mb-12">
         <div
-          class="bg-gradient-to-b from-surface to-surface-2 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg"
+          class="bg-surface rounded-2xl overflow-hidden shadow-lg border border-hairline"
         >
-          <div class="bg-gradient-to-r from-surface-2 to-surface p-6">
+          <div class="border-b border-hairline p-6">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <Trophy class="h-7 w-7 text-white" />
+                <Trophy class="h-7 w-7 text-brand" />
                 <div>
-                  <h3 class="text-2xl font-bold text-white">박스오피스 TOP 10</h3>
-                  <p class="text-dim">별점 합계 기준</p>
+                  <h3 class="text-2xl font-bold text-foreground">박스오피스 TOP 10</h3>
+                  <p class="text-dim text-sm mt-0.5">별점 합계 기준</p>
                 </div>
               </div>
 
@@ -243,14 +243,14 @@
       <!-- 이번주 화제작 - 가로 스크롤 -->
       <div class="mb-12">
         <div
-          class="bg-gradient-to-b from-surface to-surface-2 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg"
+          class="bg-surface rounded-2xl overflow-hidden shadow-lg border border-hairline"
         >
-          <div class="bg-gradient-to-r from-brand to-brand-hover p-6">
+          <div class="border-b border-hairline p-6">
             <div class="flex items-center gap-3">
-              <TrendingUp class="h-7 w-7 text-white" />
+              <TrendingUp class="h-7 w-7 text-brand" />
               <div>
-                <h3 class="text-2xl font-bold text-white">이번주 화제작</h3>
-                <p class="text-[#1A1408]">트렌딩 지수 기준</p>
+                <h3 class="text-2xl font-bold text-foreground">이번주 화제작</h3>
+                <p class="text-dim text-sm mt-0.5">트렌딩 지수 기준</p>
               </div>
             </div>
           </div>
@@ -344,7 +344,7 @@
       <div class="mt-8 text-center">
         <div class="bg-surface/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-hairline">
           <p class="text-dim mb-2">
-            <span class="font-semibold">📊 랭킹 기준:</span> 평점, 관객수, 리뷰 점수를 종합하여 산정
+            <span class="font-semibold text-foreground">랭킹 기준</span> — 평점, 관객수, 리뷰 점수를 종합하여 산정
           </p>
           <p class="text-dim text-sm">매일 오전 6시에 업데이트됩니다.</p>
         </div>

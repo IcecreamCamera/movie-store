@@ -5,7 +5,7 @@
         <div class="flex-1">
           <h3 class="text-2xl font-bold text-brand mb-4">오도독</h3>
           <p class="text-dim mb-4 text-lg">
-            영화 장르로 기분을 읽고, 매점 간식을 추천하는 서비스
+            영화 장르에 어울리는 매점 간식을 추천하는 서비스
           </p>
           <p class="text-faint text-base">© 2026 오도독. All rights reserved.</p>
         </div>
