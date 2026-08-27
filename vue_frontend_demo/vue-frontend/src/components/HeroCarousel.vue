@@ -40,7 +40,7 @@
               <h1 class="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
                 {{ movie.title }}
               </h1>
-              <p class="text-white/90 text-lg lg:text-xl leading-relaxed mb-6">
+              <p v-if="movie.description" class="text-white/90 text-lg lg:text-xl leading-relaxed mb-6">
                 {{ summary(movie.description) }}
               </p>
               <div class="flex items-center gap-4 mb-8 text-white/80">
@@ -48,12 +48,18 @@
                   <Star class="h-5 w-5 text-yellow-400 fill-current" />
                   <span class="text-lg font-semibold">{{ movie.rating.toFixed(1) }}</span>
                 </div>
-                <span>•</span>
-                <span>{{ movie.year }}년</span>
-                <span>•</span>
-                <span>{{ movie.runtime }}분</span>
-                <span>•</span>
-                <span>{{ movie.genre }}</span>
+                <template v-if="movie.year">
+                  <span>•</span>
+                  <span>{{ movie.year }}년</span>
+                </template>
+                <template v-if="movie.runtime">
+                  <span>•</span>
+                  <span>{{ movie.runtime }}분</span>
+                </template>
+                <template v-if="movie.genre">
+                  <span>•</span>
+                  <span>{{ movie.genre }}</span>
+                </template>
               </div>
               <div class="flex justify-start">
                 <BaseButton
@@ -163,6 +169,7 @@ const progressStyle = computed(() => ({
 }))
 
 function summary(text) {
+  if (!text) return ''
   return text.length > 200 ? `${text.slice(0, 200)}...` : text
 }
 

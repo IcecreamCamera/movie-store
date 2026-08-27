@@ -145,7 +145,9 @@ async function fetchMovies() {
       res = await movieApi.list()
     }
     const data = res?.data?.data ?? res?.data ?? []
-    movies.value = Array.isArray(data) ? data.map(mapMovie) : []
+    // 포스터 없는 영화(검색으로 들어와 TMDB 매칭 실패)는 목록/검색 결과에서 제외한다.
+    // 검색 결과가 전부 포스터 없는 영화뿐이면 이 화면은 "결과 없음"으로 보인다.
+    movies.value = Array.isArray(data) ? data.filter(movieApi.hasPoster).map(mapMovie) : []
   } catch (err) {
     errorMessage.value =
       err?.response?.data?.message || err?.message || '영화 목록을 불러오지 못했습니다.'

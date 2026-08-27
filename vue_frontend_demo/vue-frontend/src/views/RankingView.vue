@@ -424,7 +424,10 @@ async function fetchBoxoffice() {
     const res = await movieApi.boxoffice('WEEKLY')
     const data = res?.data?.data ?? res?.data
     targetDate.value = data?.targetDate ?? ''
-    items.value = Array.isArray(data?.items) ? data.items.map(mapItem) : []
+    // 포스터 없는 영화(검색으로 들어와 TMDB 매칭 실패)는 랭킹 화면에서 제외한다.
+    items.value = Array.isArray(data?.items)
+      ? data.items.filter((it) => movieApi.hasPoster(it.movie)).map(mapItem)
+      : []
   } catch (err) {
     errorMessage.value =
       err?.response?.data?.message || err?.message || '박스오피스 정보를 불러오지 못했습니다.'
