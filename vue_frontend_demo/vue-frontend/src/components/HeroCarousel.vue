@@ -9,13 +9,23 @@
     @focusin="pause"
     @focusout="resume"
   >
-    <!-- 슬라이드: 방향에 따라 좌/우로 밀려 들어오고 나간다 -->
-    <Transition :name="transitionName">
-      <div :key="index" class="absolute inset-0">
-        <div class="absolute inset-0 cursor-pointer" @click="emit('select', current)">
+    <!--
+      슬라이드를 한 줄로 늘어놓고 트랙만 옆으로 민다.
+      <Transition>의 enter/leave를 쓰지 않으므로 DOM에 있는 슬라이드 수가 항상 일정하고,
+      requestAnimationFrame이 멈춘 상태(창이 가려짐 등)에서도 상태가 어긋나지 않는다.
+    -->
+    <div ref="track" class="hero-track flex h-full" :style="trackStyle">
+      <div
+        v-for="(movie, i) in slides"
+        :key="i"
+        class="relative w-full h-full shrink-0"
+        :inert="i !== position ? true : undefined"
+        :aria-hidden="i !== position ? 'true' : undefined"
+      >
+        <div class="absolute inset-0 cursor-pointer" @click="emit('select', movie)">
           <ImageWithFallback
-            :src="current.poster"
-            :alt="current.title"
+            :src="movie.poster"
+            :alt="movie.title"
             class="w-full h-full object-cover"
           />
           <!-- 그라데이션 오버레이 -->
@@ -28,27 +38,27 @@
           <div class="max-w-7xl mx-auto px-8 lg:px-16 relative pb-8 lg:pb-16">
             <div class="max-w-lg">
               <h1 class="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-                {{ current.title }}
+                {{ movie.title }}
               </h1>
               <p class="text-white/90 text-lg lg:text-xl leading-relaxed mb-6">
-                {{ summary(current.description) }}
+                {{ summary(movie.description) }}
               </p>
               <div class="flex items-center gap-4 mb-8 text-white/80">
                 <div class="flex items-center gap-2">
                   <Star class="h-5 w-5 text-yellow-400 fill-current" />
-                  <span class="text-lg font-semibold">{{ current.rating.toFixed(1) }}</span>
+                  <span class="text-lg font-semibold">{{ movie.rating.toFixed(1) }}</span>
                 </div>
                 <span>•</span>
-                <span>{{ current.year }}년</span>
+                <span>{{ movie.year }}년</span>
                 <span>•</span>
-                <span>{{ current.runtime }}분</span>
+                <span>{{ movie.runtime }}분</span>
                 <span>•</span>
-                <span>{{ current.genre }}</span>
+                <span>{{ movie.genre }}</span>
               </div>
               <div class="flex justify-start">
                 <BaseButton
                   class="bg-white text-black hover:bg-white/90 px-12 py-4 text-xl font-semibold shadow-lg h-auto"
-                  @click.stop="emit('select', current)"
+                  @click.stop="emit('select', movie)"
                 >
                   <Info class="h-6 w-6 mr-3" />
                   상세 정보
@@ -58,10 +68,10 @@
           </div>
         </div>
       </div>
-    </Transition>
+    </div>
 
     <!-- 좌우 이동 버튼 -->
-    <template v-if="movies.length > 1">
+    <template v-if="total > 1">
       <button
         type="button"
         aria-label="이전 영화"
@@ -92,14 +102,14 @@
           :key="movie.id"
           type="button"
           :aria-label="`${i + 1}번째 영화: ${movie.title}`"
-          :aria-current="i === index"
+          :aria-current="i === current"
           class="h-1.5 rounded-full overflow-hidden transition-all duration-300 cursor-pointer"
-          :class="i === index ? 'w-10 bg-white/30' : 'w-2.5 bg-white/40 hover:bg-white/70'"
+          :class="i === current ? 'w-10 bg-white/30' : 'w-2.5 bg-white/40 hover:bg-white/70'"
           @click="jump(i)"
         >
           <span
-            v-if="i === index"
-            :key="index"
+            v-if="i === current"
+            :key="current"
             class="hero-progress block h-full w-full bg-white"
             :style="progressStyle"
           ></span>
@@ -110,13 +120,15 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Star, Info, ChevronLeft, ChevronRight } from '@lucide/vue'
 import ImageWithFallback from '@/components/ImageWithFallback.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 
 // 한 슬라이드가 머무는 시간. 인디케이터 진행 막대와 같은 값을 쓴다.
 const INTERVAL_MS = 6000
+// 옆으로 밀리는 시간. 복제본에서 되돌아오는 시점을 재는 데도 쓴다.
+const SLIDE_MS = 700
 
 const props = defineProps({
   movies: { type: Array, required: true }
@@ -124,12 +136,27 @@ const props = defineProps({
 
 const emit = defineEmits(['select'])
 
-const index = ref(0)
-const direction = ref(1)
+const track = ref(null)
+// 트랙 위치. 0..total-1은 실제 슬라이드, total은 맨 끝 복제본(= 0번과 같은 화면).
+const position = ref(0)
+const animate = ref(true)
 const paused = ref(false)
 
-const current = computed(() => props.movies[index.value])
-const transitionName = computed(() => (direction.value === 1 ? 'slide-next' : 'slide-prev'))
+const total = computed(() => props.movies.length)
+
+// 마지막에서 처음으로 넘어갈 때 되감기처럼 보이지 않도록 0번을 한 장 더 붙인다.
+const slides = computed(() =>
+  total.value > 1 ? [...props.movies, props.movies[0]] : props.movies
+)
+
+// 복제본 위에 있을 때도 실제로 보고 있는 건 0번이다.
+const current = computed(() => position.value % total.value)
+
+const trackStyle = computed(() => ({
+  transform: `translateX(-${position.value * 100}%)`,
+  transition: animate.value ? `transform ${SLIDE_MS}ms cubic-bezier(0.4, 0, 0.2, 1)` : 'none'
+}))
+
 const progressStyle = computed(() => ({
   animationDuration: `${INTERVAL_MS}ms`,
   animationPlayState: paused.value ? 'paused' : 'running'
@@ -139,24 +166,71 @@ function summary(text) {
   return text.length > 200 ? `${text.slice(0, 200)}...` : text
 }
 
-// 인덱스만 옮긴다. 타이머가 직접 호출하는 경로.
-function go(step) {
-  const total = props.movies.length
-  if (total < 2) return
-  direction.value = step >= 0 ? 1 : -1
-  index.value = (index.value + step + total) % total
+// transition을 끈 채 위치를 바꾼 뒤, 그 변경이 DOM에 반영되고 나서 다시 켠다.
+// 강제 리플로우를 한 번 읽어야 브라우저가 두 변경을 한 프레임으로 합치지 않는다.
+async function resumeAnimation() {
+  await nextTick()
+  if (track.value) void track.value.offsetWidth
+  animate.value = true
+}
+
+// 복제본에 서 있으면 티 나지 않게 진짜 0번으로 옮겨둔다.
+function normalizeFromClone() {
+  if (position.value !== total.value) return false
+  animate.value = false
+  position.value = 0
+  return true
+}
+
+let snapTimer = null
+
+function clearSnap() {
+  if (snapTimer !== null) {
+    window.clearTimeout(snapTimer)
+    snapTimer = null
+  }
+}
+
+// 복제본까지 밀고 난 뒤, 애니메이션이 끝나면 조용히 0번으로 되돌린다.
+// setTimeout이라 렌더링이 멈춘 상태에서도 상태가 밀리지 않는다.
+function scheduleSnap() {
+  clearSnap()
+  snapTimer = window.setTimeout(async () => {
+    snapTimer = null
+    if (normalizeFromClone()) await resumeAnimation()
+  }, SLIDE_MS)
+}
+
+async function go(step) {
+  if (total.value < 2) return
+  clearSnap()
+  if (normalizeFromClone()) await resumeAnimation()
+
+  if (step > 0) {
+    position.value += 1
+    // 복제본에 도착했으면 되돌릴 준비를 한다.
+    if (position.value === total.value) scheduleSnap()
+  } else if (position.value === 0) {
+    // 0번에서 뒤로 가려면 화면이 같은 복제본으로 순간 이동한 뒤 왼쪽으로 민다.
+    animate.value = false
+    position.value = total.value
+    await resumeAnimation()
+    position.value = total.value - 1
+  } else {
+    position.value -= 1
+  }
 }
 
 // 사용자 조작. 다음 슬라이드까지 시간을 다시 채워준다.
-function navigate(step) {
-  go(step)
+async function navigate(step) {
+  await go(step)
   schedule()
 }
 
-function jump(i) {
-  if (i === index.value) return
-  direction.value = i > index.value ? 1 : -1
-  index.value = i
+async function jump(i) {
+  clearSnap()
+  if (normalizeFromClone()) await resumeAnimation()
+  if (i !== current.value) position.value = i
   schedule()
 }
 
@@ -171,9 +245,8 @@ function clear() {
 
 function schedule() {
   clear()
-  // 탭이 숨겨져 있으면 아예 돌리지 않는다. 배경 탭에서는 requestAnimationFrame이
-  // 멈춰 <Transition>의 leave가 끝나지 않고, 슬라이드 DOM이 계속 쌓인다.
-  if (paused.value || document.hidden || props.movies.length < 2) return
+  // 숨겨진 탭에서는 굳이 돌리지 않는다.
+  if (paused.value || document.hidden || total.value < 2) return
   timer = window.setInterval(() => go(1), INTERVAL_MS)
 }
 
@@ -187,7 +260,6 @@ function resume() {
   schedule()
 }
 
-// 탭이 백그라운드로 가면 멈춘다. 돌아왔을 때 밀린 만큼 한꺼번에 넘어가지 않도록.
 function onVisibilityChange() {
   if (document.hidden) clear()
   else schedule()
@@ -200,31 +272,12 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clear()
+  clearSnap()
   document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 </script>
 
 <style scoped>
-.slide-next-enter-active,
-.slide-next-leave-active,
-.slide-prev-enter-active,
-.slide-prev-leave-active {
-  transition: transform 700ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.slide-next-enter-from {
-  transform: translateX(100%);
-}
-.slide-next-leave-to {
-  transform: translateX(-100%);
-}
-.slide-prev-enter-from {
-  transform: translateX(-100%);
-}
-.slide-prev-leave-to {
-  transform: translateX(100%);
-}
-
 @keyframes hero-progress {
   from {
     transform: scaleX(0);
@@ -243,11 +296,8 @@ onBeforeUnmount(() => {
 
 /* 모션 최소화를 켠 사용자에게는 밀림/진행 애니메이션을 없앤다 */
 @media (prefers-reduced-motion: reduce) {
-  .slide-next-enter-active,
-  .slide-next-leave-active,
-  .slide-prev-enter-active,
-  .slide-prev-leave-active {
-    transition-duration: 1ms;
+  .hero-track {
+    transition: none !important;
   }
   .hero-progress {
     animation: none;

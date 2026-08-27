@@ -57,38 +57,52 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Search, Bell, User } from '@lucide/vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
+import { scrollToSection } from '@/router'
 
 const props = defineProps({
-  // 'home' | 'movies' | 'ranking' | 'reviews' | 'movie-detail' | 'search'
+  // 'home' | 'ranking' | 'movie-detail'
   currentPage: { type: String, default: 'home' }
 })
 
 const emit = defineEmits(['search'])
 const router = useRouter()
+const route = useRoute()
 const searchQuery = ref('')
 
 const navItems = [
   { key: 'home', label: '홈' },
-  { key: 'movies', label: '검색' },
   { key: 'ranking', label: '랭킹' },
-  { key: 'reviews', label: '리뷰' }
+  { key: 'snacks', label: '오늘의 간식' }
 ]
 
 function isActive(key) {
-  if (key === 'movies') return props.currentPage === 'movies' || props.currentPage === 'search'
   return props.currentPage === key
 }
 
-// 검색/리뷰 페이지는 이번 범위에 없으므로 라우트가 있는 항목만 이동한다.
-const ROUTES = { home: '/', ranking: '/ranking' }
+// '오늘의 간식'을 누르면 홈 화면 하단에 있는 #snacks 섹션으로 이동한다.
+const ROUTES = {
+  home: '/',
+  ranking: '/ranking',
+  snacks: { path: '/', hash: '#snacks' }
+}
 
 function go(key) {
-  const path = ROUTES[key]
-  if (path) router.push(path)
+  const target = ROUTES[key]
+  if (!target) return
+
+  // 이미 같은 위치면 라우터가 스크롤을 트리거하지 않으므로 직접 옮긴다.
+  const resolved = router.resolve(target)
+  if (resolved.fullPath === route.fullPath) {
+    if (resolved.hash) scrollToSection(resolved.hash)
+    else window.scrollTo({ top: 0, behavior: 'smooth' })
+    return
+  }
+
+  router.push(target)
 }
 
 function submitSearch() {
