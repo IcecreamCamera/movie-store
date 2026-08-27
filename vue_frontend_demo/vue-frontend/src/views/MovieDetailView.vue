@@ -1,16 +1,16 @@
 <template>
-  <div class="min-h-screen" style="background-color: #ffffff">
+  <div class="min-h-screen bg-background">
     <!-- 공통 헤더 -->
     <AppHeader current-page="movie-detail" />
 
     <!-- 페이지 제목 헤더 -->
-    <div style="background-color: #e4e4e4">
+    <div class="bg-surface border-b border-hairline">
       <div class="max-w-7xl mx-auto px-8 lg:px-16 py-6">
         <div class="flex items-center gap-3">
-          <Film class="h-6 w-6 text-red-600" />
-          <h1 class="text-2xl font-bold text-black">영화 상세정보</h1>
+          <Film class="h-6 w-6 text-brand" />
+          <h1 class="text-2xl font-bold text-foreground">{{ movie.title }}</h1>
         </div>
-        <p class="text-black/70 mt-2">{{ movie.title }}의 상세 정보를 확인하세요</p>
+        <p class="text-dim mt-2">줄거리와 출연진을 보고, 마음에 들면 바로 예매하세요.</p>
       </div>
     </div>
 
@@ -19,7 +19,7 @@
       <div class="mb-6">
         <BaseButton
           variant="ghost"
-          class="text-gray-600 hover:text-black hover:bg-gray-100 -ml-2"
+          class="text-dim hover:text-brand hover:bg-surface-2 -ml-2"
           @click="goBack"
         >
           <ArrowLeft class="h-5 w-5 mr-2" />
@@ -31,7 +31,7 @@
         <!-- 메인 콘텐츠 -->
         <div class="lg:col-span-3 space-y-8">
           <!-- 영화 기본 정보 + 줄거리 + 출연진 -->
-          <div class="bg-gradient-to-b from-gray-100/80 to-gray-200/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+          <div class="bg-gradient-to-b from-surface to-surface-2 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
             <div class="flex flex-col md:flex-row gap-8 mb-8">
               <!-- 포스터 -->
               <div class="flex-shrink-0">
@@ -47,44 +47,83 @@
               <!-- 영화 정보 + 줄거리 -->
               <div class="flex-1">
                 <div class="flex items-center gap-3 mb-4">
-                  <BaseBadge class="bg-red-100 text-red-700">{{ movie.year }}년 작품</BaseBadge>
+                  <BaseBadge class="bg-brand-dim text-brand">{{ movie.year }}년 작품</BaseBadge>
                   <BaseBadge variant="outline">{{ movie.genre }}</BaseBadge>
                 </div>
 
-                <h1 class="text-4xl font-bold text-black mb-4">{{ movie.title }}</h1>
-                <p class="text-xl text-gray-700 mb-6">감독: {{ movie.director }}</p>
+                <h1 class="text-4xl font-bold text-foreground mb-4">{{ movie.title }}</h1>
+                <p class="text-xl text-dim mb-6">감독: {{ movie.director }}</p>
 
                 <div class="grid grid-cols-2 gap-6 mb-8">
                   <div class="flex items-center gap-2">
                     <Star class="h-5 w-5 text-yellow-400 fill-current" />
                     <span class="font-semibold">{{ movie.rating.toFixed(1) }}</span>
-                    <span class="text-gray-500">(3,847명 평가)</span>
+                    <span class="text-faint">(3,847명 평가)</span>
                   </div>
                   <div class="flex items-center gap-2">
-                    <Clock class="h-5 w-5 text-gray-400" />
+                    <Clock class="h-5 w-5 text-faint" />
                     <span>{{ movie.runtime }}분</span>
                   </div>
                   <div class="flex items-center gap-2">
-                    <Calendar class="h-5 w-5 text-gray-400" />
+                    <Calendar class="h-5 w-5 text-faint" />
                     <span>{{ movie.year }}년 개봉</span>
                   </div>
                   <div class="flex items-center gap-2">
-                    <Users class="h-5 w-5 text-gray-400" />
+                    <Users class="h-5 w-5 text-faint" />
                     <span>15세 이상 관람가</span>
                   </div>
                 </div>
 
                 <!-- 줄거리 -->
                 <div class="mb-6">
-                  <h3 class="text-lg font-semibold text-black mb-3">줄거리</h3>
-                  <p class="text-gray-700 leading-relaxed">{{ movie.description || DEFAULT_PLOT }}</p>
+                  <h3 class="text-lg font-semibold text-foreground mb-3">줄거리</h3>
+                  <p class="text-dim leading-relaxed">{{ movie.description || DEFAULT_PLOT }}</p>
+                </div>
+
+                <!-- 예매 -->
+                <div class="rounded-xl bg-surface-2 border border-hairline p-5">
+                  <div class="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                      <span class="block text-sm text-faint mb-2">매수</span>
+                      <div class="flex items-center gap-3">
+                        <button
+                          class="w-9 h-9 rounded-full border border-hairline text-foreground hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                          :disabled="quantity <= 1"
+                          aria-label="매수 줄이기"
+                          @click="quantity--"
+                        >−</button>
+                        <span class="w-8 text-center text-lg font-semibold text-foreground">{{ quantity }}</span>
+                        <button
+                          class="w-9 h-9 rounded-full border border-hairline text-foreground hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                          :disabled="quantity >= 8"
+                          aria-label="매수 늘리기"
+                          @click="quantity++"
+                        >+</button>
+                      </div>
+                    </div>
+
+                    <div class="text-right">
+                      <span class="block text-sm text-faint mb-1">
+                        {{ TICKET_PRICE.toLocaleString() }}원 × {{ quantity }}
+                      </span>
+                      <span class="text-2xl font-bold text-brand">{{ amount.toLocaleString() }}원</span>
+                    </div>
+                  </div>
+
+                  <BaseButton
+                    class="w-full mt-5 bg-brand text-[#1A1408] hover:bg-brand-hover font-semibold py-3 h-auto text-lg"
+                    @click="book"
+                  >
+                    <Ticket class="h-5 w-5 mr-2" />
+                    예매하기
+                  </BaseButton>
                 </div>
               </div>
             </div>
 
             <!-- 출연진 -->
             <div>
-              <h3 class="text-lg font-semibold text-black mb-4">주요 출연진</h3>
+              <h3 class="text-lg font-semibold text-foreground mb-4">주요 출연진</h3>
               <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div v-for="actor in cast" :key="actor.id" class="flex items-center gap-3">
                   <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow-md">
@@ -95,45 +134,99 @@
                     />
                   </div>
                   <div class="min-w-0 flex-1">
-                    <h4 class="font-semibold text-black text-sm truncate">{{ actor.name }}</h4>
-                    <p class="text-xs text-gray-600 truncate">{{ actor.character }}</p>
+                    <h4 class="font-semibold text-foreground text-sm truncate">{{ actor.name }}</h4>
+                    <p class="text-xs text-dim truncate">{{ actor.character }}</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- OST 섹션 -->
-          <div class="bg-gradient-to-b from-gray-100/80 to-gray-200/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+          <!-- 관람평 -->
+          <div class="bg-surface rounded-2xl p-8 shadow-lg border border-hairline">
             <div class="flex items-center gap-3 mb-6">
-              <Volume2 class="h-6 w-6 text-purple-600" />
-              <h2 class="text-2xl font-bold text-black">OST</h2>
+              <Star class="h-6 w-6 text-brand" />
+              <h2 class="text-2xl font-bold text-foreground">관람평</h2>
+              <span class="text-faint text-sm ml-auto">{{ reviews.length }}개</span>
+            </div>
+
+            <!-- 별점 요약 -->
+            <div class="flex flex-col sm:flex-row gap-8 pb-6 mb-6 border-b border-hairline">
+              <div class="text-center sm:text-left shrink-0">
+                <div class="text-5xl font-bold text-brand leading-none">{{ movie.rating.toFixed(1) }}</div>
+                <div class="flex items-center justify-center sm:justify-start gap-0.5 mt-2">
+                  <Star
+                    v-for="i in 5"
+                    :key="i"
+                    class="h-4 w-4"
+                    :class="i <= Math.round(movie.rating / 2) ? 'text-brand fill-current' : 'text-faint'"
+                  />
+                </div>
+                <p class="text-faint text-xs mt-2">10점 만점</p>
+              </div>
+
+              <div class="flex-1 space-y-1.5">
+                <div v-for="row in breakdown" :key="row.score" class="flex items-center gap-3">
+                  <span class="text-faint text-xs w-6 shrink-0">{{ row.score }}점</span>
+                  <div class="flex-1 h-2 rounded-full bg-surface-2">
+                    <div class="h-2 rounded-full bg-brand" :style="{ width: row.pct + '%' }"></div>
+                  </div>
+                  <span class="text-faint text-xs w-8 text-right shrink-0">{{ row.count }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 리뷰 목록 -->
+            <ul class="space-y-5">
+              <li v-for="r in reviews" :key="r.id">
+                <div class="flex items-center gap-2 mb-1.5">
+                  <span class="font-medium text-foreground text-sm">{{ r.nickname }}</span>
+                  <span class="flex items-center gap-0.5">
+                    <Star
+                      v-for="i in 5"
+                      :key="i"
+                      class="h-3 w-3"
+                      :class="i <= r.score ? 'text-brand fill-current' : 'text-faint'"
+                    />
+                  </span>
+                  <span class="text-faint text-xs ml-auto">{{ formatDate(r.date) }}</span>
+                </div>
+                <p class="text-dim text-sm leading-relaxed">{{ r.text }}</p>
+              </li>
+            </ul>
+          </div>
+
+          <!-- OST 섹션 -->
+          <div class="bg-gradient-to-b from-surface to-surface-2 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+            <div class="flex items-center gap-3 mb-6">
+              <Volume2 class="h-6 w-6 text-brand" />
+              <h2 class="text-2xl font-bold text-foreground">OST</h2>
             </div>
             <div class="space-y-3">
               <div
                 v-for="track in ostTracks"
                 :key="track.id"
-                class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-2 transition-colors cursor-pointer"
               >
                 <div class="flex items-center gap-4">
-                  <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Play class="h-4 w-4 text-purple-600" />
+                  <div class="w-8 h-8 bg-brand-dim rounded-full flex items-center justify-center">
+                    <Play class="h-4 w-4 text-brand" />
                   </div>
                   <div>
-                    <h4 class="font-medium text-black">{{ track.title }}</h4>
-                    <p class="text-sm text-gray-600">{{ track.artist }}</p>
+                    <h4 class="font-medium text-foreground">{{ track.title }}</h4>
+                    <p class="text-sm text-dim">{{ track.artist }}</p>
                   </div>
                 </div>
-                <span class="text-gray-500 text-sm">{{ track.duration }}</span>
+                <span class="text-faint text-sm">{{ track.duration }}</span>
               </div>
             </div>
           </div>
 
           <!-- 예고편 & 영상 섹션 -->
-          <div class="bg-gradient-to-b from-gray-100/80 to-gray-200/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+          <div class="bg-gradient-to-b from-surface to-surface-2 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
             <div class="flex items-center gap-3 mb-6">
-              <Film class="h-6 w-6 text-red-600" />
-              <h2 class="text-2xl font-bold text-black">예고편 &amp; 영상</h2>
+              <Film class="h-6 w-6 text-brand" />
+              <h2 class="text-2xl font-bold text-foreground">예고편 &amp; 영상</h2>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div v-for="trailer in trailers" :key="trailer.id" class="group cursor-pointer">
@@ -144,22 +237,22 @@
                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
-                    <div class="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center">
-                      <Play class="h-6 w-6 text-gray-800 ml-1" />
+                    <div class="w-12 h-12 bg-surface-2 rounded-full flex items-center justify-center">
+                      <Play class="h-6 w-6 text-foreground ml-1" />
                     </div>
                   </div>
                   <div class="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                     {{ trailer.duration }}
                   </div>
                 </div>
-                <h4 class="font-medium text-black text-sm">{{ trailer.title }}</h4>
+                <h4 class="font-medium text-foreground text-sm">{{ trailer.title }}</h4>
               </div>
             </div>
           </div>
 
           <!-- 비슷한 키워드 영화 추천 -->
-          <div class="bg-gradient-to-b from-gray-100/80 to-gray-200/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
-            <h2 class="text-2xl font-bold text-black mb-6">비슷한 키워드 영화</h2>
+          <div class="bg-gradient-to-b from-surface to-surface-2 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+            <h2 class="text-2xl font-bold text-foreground mb-6">비슷한 키워드 영화</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div v-for="km in keywordMovies" :key="km.id" class="group cursor-pointer">
                 <div
@@ -172,12 +265,12 @@
                   />
                 </div>
                 <h4
-                  class="font-semibold text-black text-sm mb-1 group-hover:text-blue-600 transition-colors"
+                  class="font-semibold text-foreground text-sm mb-1 group-hover:text-brand transition-colors"
                 >
                   {{ km.title }}
                 </h4>
                 <div class="flex items-center justify-between">
-                  <span class="text-gray-500 text-xs">{{ km.year }}년</span>
+                  <span class="text-faint text-xs">{{ km.year }}년</span>
                   <div class="flex items-center gap-1">
                     <Star class="h-3 w-3 text-yellow-400 fill-current" />
                     <span class="text-yellow-600 text-xs font-medium">{{ km.rating }}</span>
@@ -190,8 +283,8 @@
 
         <!-- 사이드바 - 관련 기사 -->
         <div class="lg:col-span-1">
-          <div class="bg-gradient-to-b from-gray-100/80 to-gray-200/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
-            <h3 class="font-bold text-lg text-black mb-6">관련 기사</h3>
+          <div class="bg-gradient-to-b from-surface to-surface-2 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+            <h3 class="font-bold text-lg text-foreground mb-6">관련 기사</h3>
             <div class="space-y-6">
               <div v-for="article in relatedArticles" :key="article.id" class="group cursor-pointer">
                 <div class="aspect-video rounded-lg overflow-hidden mb-3">
@@ -202,11 +295,11 @@
                   />
                 </div>
                 <h4
-                  class="font-medium text-black text-sm mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors"
+                  class="font-medium text-foreground text-sm mb-2 line-clamp-2 group-hover:text-brand transition-colors"
                 >
                   {{ article.title }}
                 </h4>
-                <div class="flex items-center justify-between text-xs text-gray-500">
+                <div class="flex items-center justify-between text-xs text-faint">
                   <span>{{ article.source }}</span>
                   <span>{{ article.date }}</span>
                 </div>
@@ -223,11 +316,22 @@
 
     <!-- 공통 푸터 -->
     <AppFooter />
+
+    <!-- 간식 고르기 → 합산 결제 → 예매 완료 -->
+    <BookingDialog
+      :open="bookingOpen"
+      :movie="movie"
+      :quantity="quantity"
+      :ticket-amount="amount"
+      :booking="booked"
+      @confirm="confirmBooking"
+      @close="closeBooking"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   ArrowLeft,
@@ -238,19 +342,68 @@ import {
   Play,
   Volume2,
   Film,
+  Ticket,
   ExternalLink
 } from '@lucide/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import ImageWithFallback from '@/components/ImageWithFallback.vue'
+import BookingDialog from '@/components/BookingDialog.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import { findMovieById, featuredMovie, ACTOR_IMAGE, SCENE_IMAGE, allMovies } from '@/data/movies'
+import { addBooking } from '@/store/bookings'
+import { reviewsFor, scoreBreakdown } from '@/data/reviews'
 
 const route = useRoute()
 const router = useRouter()
 
 const movie = computed(() => findMovieById(route.params.id) || featuredMovie)
+
+// 관람평 (리뷰 API는 명세에 없어 목데이터로 구성)
+const reviews = computed(() => reviewsFor(movie.value))
+const breakdown = computed(() => scoreBreakdown(reviews.value))
+
+function formatDate(d) {
+  return new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric' }).format(d)
+}
+
+// 예매
+// 목데이터에 티켓 단가가 없어 고정값을 씁니다.
+// 백엔드 연동 시 movies.price(DB 기본값 14000)로 교체.
+const TICKET_PRICE = 14000
+
+const quantity = ref(1)
+const bookingOpen = ref(false)
+const booked = ref(null)
+
+const amount = computed(() => TICKET_PRICE * quantity.value)
+
+// 다른 영화로 이동하면 매수를 초기화한다.
+watch(() => route.params.id, () => { quantity.value = 1 })
+
+// 예매하기를 누르면 바로 결제하지 않고, 먼저 간식 추천 단계를 띄운다.
+function book() {
+  booked.value = null
+  bookingOpen.value = true
+}
+
+// 간식을 고르고 결제하거나('안 살래요' 포함) 하면 그때 예매가 확정된다.
+// TODO: POST /api/bookings { movieId, quantity, snacks } 로 교체.
+// 백엔드 흐름: 영화 확인 → 결제 요청 → payment.completed 수신 → 예매 확정.
+function confirmBooking(snacks) {
+  booked.value = addBooking({
+    movie: movie.value,
+    quantity: quantity.value,
+    amount: amount.value,
+    snacks
+  })
+}
+
+function closeBooking() {
+  bookingOpen.value = false
+  booked.value = null
+}
 
 const DEFAULT_PLOT =
   '절대 울지 않는 남자의 마지막 눈물을 그린 감동 액션 드라마. 복수와 용서 사이에서 고뇌하는 한 남자의 이야기가 깊은 울림을 준다. 가족을 잃은 슬픔과 분노로 가득한 주인공이 진정한 용서와 구원을 찾아가는 여정을 그린 작품으로, 액션과 드라마가 완벽하게 조화를 이룬다.'
