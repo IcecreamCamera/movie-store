@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -26,6 +27,12 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(BookingDto.ApiResponse.error(message));
+    }
+
+    @ExceptionHandler(ServletRequestBindingException.class)
+    public ResponseEntity<BookingDto.ApiResponse<Void>> handleBinding(ServletRequestBindingException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(BookingDto.ApiResponse.error(e.getMessage()));
     }
 
     @ExceptionHandler(RuntimeException.class)

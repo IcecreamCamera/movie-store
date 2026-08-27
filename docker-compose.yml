@@ -110,7 +110,9 @@ services:
   # API Gateway
 
   api-gateway:
-    image: msa-lecture/api-gateway:1.0
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
     container_name: lecture-gateway
     ports:
       - "8080:8080"

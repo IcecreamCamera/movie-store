@@ -17,8 +17,8 @@ public class PaymentDto {
     @AllArgsConstructor
     @Builder
     public static class PaymentRequest {
-        @NotNull(message = "강의 ID는 필수입니다")
-        private Long courseId;
+        @NotNull(message = "영화 ID는 필수입니다")
+        private Long movieId;
 
         @NotNull(message = "금액은 필수입니다")
         @Positive(message = "금액은 양수여야 합니다")
@@ -32,7 +32,8 @@ public class PaymentDto {
     @Builder
     public static class InternalPaymentRequest {
         private Long userId;
-        private Long courseId;
+        private Long bookingId;
+        private Long movieId;
         private BigDecimal amount;
     }
 
@@ -44,7 +45,8 @@ public class PaymentDto {
     public static class PaymentResponse {
         private Long paymentId;
         private Long userId;
-        private Long courseId;
+        private Long bookingId;
+        private Long movieId;
         private BigDecimal amount;
         private Payment.Status status;
         private String transactionId;
@@ -54,7 +56,8 @@ public class PaymentDto {
             return PaymentResponse.builder()
                     .paymentId(payment.getId())
                     .userId(payment.getUserId())
-                    .courseId(payment.getCourseId())
+                    .bookingId(payment.getBookingId())
+                    .movieId(payment.getMovieId())
                     .amount(payment.getAmount())
                     .status(payment.getStatus())
                     .transactionId(payment.getTransactionId())

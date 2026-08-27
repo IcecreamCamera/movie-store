@@ -33,3 +33,7 @@ infra-images*
 *.tar.gz
 *.zip
 *.part.*
+
+# ── 프로젝트 생성 산출물 ──
+docs/superpowers/*
+/.superpowers/*
