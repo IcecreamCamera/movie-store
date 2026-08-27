@@ -49,7 +49,15 @@ public class BookingService {
 
         Booking booking = bookingWriteService.createPendingBooking(userId, movieId, quantity, amount);
 
-        paymentServiceClient.requestPayment(userId, booking.getId(), movieId, amount);
+        PaymentServiceClient.PaymentResult result =
+                paymentServiceClient.requestPayment(userId, booking.getId(), movieId, amount);
+
+        if (result == null || !"COMPLETED".equals(result.getStatus())) {
+            log.warn("[BookingService] 결제 실패 - bookingId: {}, status: {}",
+                    booking.getId(), result != null ? result.getStatus() : "null");
+            bookingWriteService.cancelBooking(booking.getId());
+            throw new IllegalStateException("결제에 실패했습니다");
+        }
 
         log.info("[BookingService] 예매 접수 (결제 대기) - bookingId: {}", booking.getId());
         return BookingDto.BookingResponse.from(booking);
@@ -64,6 +72,11 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "예매 정보를 찾을 수 없습니다 - bookingId: " + bookingId));
+
+        if (booking.getStatus() == Booking.Status.CONFIRMED) {
+            log.info("[BookingService] 이미 확정된 예매 - 중복 이벤트 무시: {}", bookingId);
+            return;
+        }
 
         booking.confirm();
 

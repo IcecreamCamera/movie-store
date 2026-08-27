@@ -35,6 +35,16 @@ class BookingKafkaConsumerTest {
     }
 
     @Test
+    void bookingId가_문자열로_와도_확정한다() {
+        Map<String, Object> event = new HashMap<>();
+        event.put("bookingId", "100");
+
+        consumer.handlePaymentCompleted(event);
+
+        verify(bookingService).confirmBooking(100L);
+    }
+
+    @Test
     void bookingId가_없으면_확정하지_않는다() {
         Map<String, Object> event = new HashMap<>();
         event.put("userId", 1);

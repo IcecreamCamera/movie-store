@@ -38,4 +38,17 @@ public class BookingWriteService {
 
         return booking;
     }
+
+    /**
+     * 결제 실패한 예매를 독립 트랜잭션으로 취소한다.
+     * createPendingBooking 이 REQUIRES_NEW 로 이미 커밋한 행이므로,
+     * 호출자의 트랜잭션과 무관하게 별도로 상태를 되돌려야 한다.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void cancelBooking(Long bookingId) {
+        bookingRepository.findById(bookingId).ifPresent(booking -> {
+            booking.cancel();
+            log.info("[BookingWriteService] 예매 취소 - bookingId: {}", bookingId);
+        });
+    }
 }

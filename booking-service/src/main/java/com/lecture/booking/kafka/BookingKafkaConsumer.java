@@ -37,7 +37,9 @@ public class BookingKafkaConsumer {
                         "payment.completed 이벤트에 bookingId가 없습니다. payment-service 계약을 확인하세요.");
             }
 
-            Long bookingId = ((Number) bookingIdValue).longValue();
+            Long bookingId = bookingIdValue instanceof Number number
+                    ? number.longValue()
+                    : Long.parseLong(bookingIdValue.toString().trim());
             bookingService.confirmBooking(bookingId);
 
             log.info("[Kafka Consumer] 예매 확정 완료 - bookingId: {}", bookingId);

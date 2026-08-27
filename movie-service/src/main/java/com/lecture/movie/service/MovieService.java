@@ -102,7 +102,10 @@ public class MovieService {
     /** 예매 확정 시 booking-service가 호출 */
     @Transactional
     public void increaseBookingCount(Long movieId) {
-        findMovieById(movieId).increaseBookingCount();
+        int updated = movieRepository.incrementBookingCount(movieId);
+        if (updated == 0) {
+            throw new IllegalArgumentException("영화를 찾을 수 없습니다: " + movieId);
+        }
     }
 
     private Movie findMovieById(Long id) {

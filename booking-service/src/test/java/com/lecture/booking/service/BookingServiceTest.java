@@ -36,6 +36,12 @@ class BookingServiceTest {
                 paymentServiceClient, kafkaProducer, writeService);
     }
 
+    private PaymentServiceClient.PaymentResult completedResult() {
+        PaymentServiceClient.PaymentResult result = mock(PaymentServiceClient.PaymentResult.class);
+        when(result.getStatus()).thenReturn("COMPLETED");
+        return result;
+    }
+
     @Test
     void 예매금액은_단가에_매수를_곱한_값이다() {
         when(movieServiceClient.existsMovie(1L)).thenReturn(true);
@@ -45,6 +51,8 @@ class BookingServiceTest {
                         .id(100L).userId(1L).movieId(1L).quantity(3)
                         .amount(new BigDecimal("42000.00"))
                         .build());
+        PaymentServiceClient.PaymentResult ok = completedResult();
+        when(paymentServiceClient.requestPayment(any(), any(), any(), any())).thenReturn(ok);
 
         BookingDto.BookingResponse response = service.book(1L,
                 BookingDto.BookRequest.builder().movieId(1L).quantity(3).build());
@@ -72,12 +80,33 @@ class BookingServiceTest {
                         .amount(new BigDecimal("14000.00")).build())
                 .thenReturn(Booking.builder().id(102L).userId(1L).movieId(1L).quantity(1)
                         .amount(new BigDecimal("14000.00")).build());
+        PaymentServiceClient.PaymentResult ok = completedResult();
+        when(paymentServiceClient.requestPayment(any(), any(), any(), any())).thenReturn(ok);
 
         BookingDto.BookRequest request =
                 BookingDto.BookRequest.builder().movieId(1L).quantity(1).build();
 
         assertEquals(101L, service.book(1L, request).getId());
         assertEquals(102L, service.book(1L, request).getId());
+    }
+
+    @Test
+    void 결제가_실패하면_예매를_취소하고_예외를_던진다() {
+        when(movieServiceClient.existsMovie(1L)).thenReturn(true);
+        when(movieServiceClient.getPrice(1L)).thenReturn(new BigDecimal("14000.00"));
+        when(writeService.createPendingBooking(eq(1L), eq(1L), eq(1), any()))
+                .thenReturn(Booking.builder()
+                        .id(200L).userId(1L).movieId(1L).quantity(1)
+                        .amount(new BigDecimal("14000.00"))
+                        .build());
+        PaymentServiceClient.PaymentResult failed = mock(PaymentServiceClient.PaymentResult.class);
+        when(failed.getStatus()).thenReturn("FAILED");
+        when(paymentServiceClient.requestPayment(any(), any(), any(), any())).thenReturn(failed);
+
+        assertThrows(IllegalStateException.class, () -> service.book(1L,
+                BookingDto.BookRequest.builder().movieId(1L).quantity(1).build()));
+
+        verify(writeService).cancelBooking(200L);
     }
 
     @Test
