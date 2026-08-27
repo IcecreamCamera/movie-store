@@ -1,105 +1,165 @@
+# -*- coding: utf-8 -*-
+import json
 import logging
-from collections import Counter
-from typing import List, Optional
+from pathlib import Path
+from typing import List, Optional, Tuple
 
-from app.client.course_client import course_client
-from app.client.enrollment_client import enrollment_client
-from app.model.schemas import CourseCategory, CourseResponse, RecommendResponse
+from app.client.movie_client import movie_client
+from app.config.settings import settings
+from app.kafka.consumer import user_recent_context
+from app.llm.client import llm_client
+from app.llm.prompt import build_recommend_messages
+from app.model.movie_data import GENRE_TASTE_MAP, MOVIE_GENRES
+from app.model.schemas import Food, RecommendedFood, RecommendResponse
 
 logger = logging.getLogger(__name__)
+
+_FOODS_PATH = Path(__file__).resolve().parent.parent / "model" / "foods.json"
 
 
 class RecommendService:
     """
-    규칙 기반 강의 추천 서비스
+    영화 장르 기반 음식(food) 추천 서비스.
 
-    추천 규칙:
-    1. 사용자의 수강 중인 강의 카테고리 분석
-    2. 가장 많이 수강한 카테고리 선택 (최빈 카테고리)
-    3. 해당 카테고리에서 미수강 강의 조회
-    4. 수강생 수 기준 내림차순 정렬하여 반환
-    5. 수강 이력 없으면 전체 강의 중 인기순 반환
+    알고리즘 신호:
+    1) LLM context injection (primary) - 장르 정보 + 음식 정보를 모두 서술한 프롬프트 주입.
+    2) Rule-based (fallback) - GENRE_TASTE_MAP 기반 가중 점수.
+
+    Notion API 명세: GET /api/recommend/{user_id}?movie_id=
+    → recommendedFoods[]: FoodItem{ id, name, imageUrl, price, taste, category }, basedOnGenre, message
     """
 
-    MAX_RECOMMEND_COUNT = 5  # 최대 추천 강의 수
+    def _load_foods(self) -> List[Food]:
+        return [Food(**f) for f in json.loads(_FOODS_PATH.read_text(encoding="utf-8"))]
 
-    async def get_recommendations(self, user_id: int) -> RecommendResponse:
-        logger.info(f"[RecommendService] 추천 시작 - userId: {user_id}")
-
-        # 1. 수강 이력 조회
-        history = await enrollment_client.get_enrollment_history(user_id)
-        active_course_ids = history.activeCourseIds
-
-        # 2. 수강 이력 없는 신규 사용자 처리
-        if not active_course_ids:
-            return await self._recommend_for_new_user(user_id)
-
-        # 3. 수강한 강의의 카테고리 분석 → 최빈 카테고리 선택
-        dominant_category = await self._find_dominant_category(active_course_ids)
-        if not dominant_category:
-            return await self._recommend_for_new_user(user_id)
-
-        # 4. 최빈 카테고리 기반 미수강 강의 조회
-        recommended = await course_client.get_recommend_courses(
-            category=dominant_category,
-            exclude_ids=active_course_ids
-        )
-
-        # 5. 최대 추천 수 제한
-        recommended = recommended[:self.MAX_RECOMMEND_COUNT]
-
-        logger.info(f"[RecommendService] 추천 완료 - userId: {user_id}, "
-                    f"category: {dominant_category}, count: {len(recommended)}")
-
-        return RecommendResponse(
-            userId=user_id,
-            recommendedCourses=recommended,
-            basedOnCategory=dominant_category,
-            message=f"{dominant_category.value} 카테고리 기반 추천 강의입니다"
-        )
-
-    async def _find_dominant_category(
-        self, course_ids: List[int]
-    ) -> Optional[CourseCategory]:
-        """
-        수강한 강의들의 카테고리 분석 → 최빈 카테고리 반환
-        Course Service에서 각 강의 정보를 조회하여 카테고리 집계
-        """
-        all_courses = await course_client.get_all_courses()
-        course_map = {c.id: c for c in all_courses}
-
-        categories = [
-            course_map[cid].category
-            for cid in course_ids
-            if cid in course_map
-        ]
-
-        if not categories:
+    def _user_context(self, user_id: Optional[int]) -> Optional[str]:
+        if user_id is None:
             return None
+        recent = user_recent_context.get(user_id)
+        if recent:
+            return f"최근 이용 영화 ID: {', '.join(str(m) for m in recent)}"
+        return None
 
-        # Counter로 최빈 카테고리 선택
-        most_common = Counter(categories).most_common(1)
-        return most_common[0][0] if most_common else None
+    async def _resolve_genre(self, movie_id: int) -> str:
+        """movieId → 장르 해석 (movie-service 조회, 실패/없으면 기본값)"""
+        genre = None
+        if movie_id is not None:
+            try:
+                genre = await movie_client.get_movie_genre(movie_id)
+            except Exception as e:
+                logger.warning(f"[RecommendService] 장르 해석 오류: {e}")
+        if not genre or genre not in MOVIE_GENRES:
+            logger.warning(
+                f"[RecommendService] movieId={movie_id} 장르 없음 → default '{settings.default_movie_genre}' 사용"
+            )
+            return settings.default_movie_genre
+        return genre
 
-    async def _recommend_for_new_user(self, user_id: int) -> RecommendResponse:
-        """
-        신규 사용자: 수강생 수 기준 전체 인기 강의 추천
-        """
-        logger.info(f"[RecommendService] 신규 사용자 추천 - userId: {user_id}")
+    async def get_food_recommendations(
+        self,
+        user_id: int,
+        movie_id: int,
+        limit: Optional[int] = None,
+    ) -> RecommendResponse:
+        limit = limit or settings.llm_max_snacks
+        genre = await self._resolve_genre(movie_id)
+        foods = self._load_foods()
+        user_context = self._user_context(user_id)
 
-        all_courses = await course_client.get_all_courses()
-        popular = sorted(
-            all_courses,
-            key=lambda c: c.enrollmentCount,
-            reverse=True
-        )[:self.MAX_RECOMMEND_COUNT]
+        if settings.llm_api_key:
+            try:
+                picks, message = await self._llm_recommend(genre, foods, limit, user_context)
+                return self._response(user_id, movie_id, genre, picks, message)
+            except Exception as e:
+                logger.warning(f"[RecommendService] LLM 추천 실패, rule-based fallback: {e}")
 
+        picks, message = self._rule_based_recommend(genre, foods, limit)
+        return self._response(user_id, movie_id, genre, picks, message)
+
+    def _response(
+        self,
+        user_id: int,
+        movie_id: int,
+        genre: str,
+        picks: List[RecommendedFood],
+        message: str,
+    ) -> RecommendResponse:
         return RecommendResponse(
             userId=user_id,
-            recommendedCourses=popular,
-            basedOnCategory=None,
-            message="인기 강의 추천입니다"
+            movieId=movie_id,
+            recommendedFoods=picks,
+            basedOnGenre=genre,
+            message=message,
         )
+
+    async def _llm_recommend(
+        self,
+        genre: str,
+        foods: List[Food],
+        limit: int,
+        user_context: Optional[str],
+    ) -> Tuple[List[RecommendedFood], str]:
+        messages = build_recommend_messages(
+            genre, [f.model_dump() for f in foods], limit, user_context or "없음"
+        )
+        data = await llm_client.chat_json(messages)
+        items = data.get("recommendedFoods", [])
+
+        by_id = {f.id: f for f in foods}
+        picks: List[RecommendedFood] = []
+        for item in items:
+            if not isinstance(item, dict) or "id" not in item:
+                continue
+            food = by_id.get(int(item["id"]))
+            if food is None:
+                continue
+            picks.append(
+                RecommendedFood(
+                    id=food.id,
+                    name=food.name,
+                    imageUrl=food.imageUrl,
+                    price=food.price,
+                    taste=food.taste,
+                    category=food.category,
+                    reason=item.get("reason"),
+                )
+            )
+            if len(picks) >= limit:
+                break
+
+        if not picks:
+            raise ValueError("LLM 응답에 유효한 음식이 없습니다")
+
+        return picks, f"{genre} 장르 기반 LLM 추천입니다"
+
+    def _rule_based_recommend(
+        self,
+        genre: str,
+        foods: List[Food],
+        limit: int,
+    ) -> Tuple[List[RecommendedFood], str]:
+        target = set(GENRE_TASTE_MAP.get(genre, ["salty", "sweet"]))
+        scored = sorted(
+            foods,
+            key=lambda f: (len(set(f.taste) & target) * 2 + f.popularity * 0.1),
+            reverse=True,
+        )
+        picks = scored[:limit]
+
+        # 안전빵: salty+sweet 하프앤하프 음식 1개 포함
+        pick_ids = {f.id for f in picks}
+        safe = next((f for f in foods if set(f.taste) == {"salty", "sweet"}), None)
+        if safe is not None and safe.id not in pick_ids and len(picks) == limit:
+            picks[-1] = safe
+
+        recommended = [
+            RecommendedFood(
+                id=f.id, name=f.name, imageUrl=f.imageUrl,
+                price=f.price, taste=f.taste, category=f.category,
+            )
+            for f in picks
+        ]
+        return recommended, f"{genre} 장르 기반 규칙 추천입니다"
 
 
 recommend_service = RecommendService()

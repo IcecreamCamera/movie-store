@@ -20,11 +20,22 @@ class Settings(BaseSettings):
     # 서비스 URL
     enrollment_service_url: str = "http://localhost:8083"
     course_service_url: str = "http://localhost:8082"
+    movie_service_url: str = "http://localhost:8082"
+    default_movie_genre: str = "DRAMA"
 
     # Kafka
     kafka_bootstrap_servers: str = "localhost:9092"
     kafka_consumer_group_id: str = "recommend-service"
     kafka_topic_enrollment_completed: str = "enrollment.completed"
+
+    # LLM (OpenAI-compatible) - 추천 알고리즘 context injection
+    llm_api_key: str = ""
+    llm_base_url: str = "https://api.deepseek.com/v1"
+    llm_model: str = "deepseek-chat"
+    llm_timeout: float = 25.0
+    llm_max_snacks: int = 3
+    llm_json_mode: bool = True
+    llm_max_tokens: int = 2048
 
     class Config:
         env_file = ".env"
