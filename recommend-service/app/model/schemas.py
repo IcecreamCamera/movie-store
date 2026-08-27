@@ -1,46 +1,34 @@
-from pydantic import BaseModel
+# -*- coding: utf-8 -*-
 from typing import List, Optional
-from enum import Enum
-from decimal import Decimal
-from datetime import datetime
+from pydantic import BaseModel
 
 
-class CourseCategory(str, Enum):
-    BACKEND = "BACKEND"
-    FRONTEND = "FRONTEND"
-    DEVOPS = "DEVOPS"
-    DATA_SCIENCE = "DATA_SCIENCE"
-    MOBILE = "MOBILE"
-    SECURITY = "SECURITY"
-    DATABASE = "DATABASE"
-    OTHER = "OTHER"
-
-
-class CourseResponse(BaseModel):
+class Food(BaseModel):
+    """food 카탈로그 항목 (foods.json, 내부 로드용)"""
     id: int
-    title: str
-    description: Optional[str] = None
-    category: CourseCategory
-    price: Decimal
-    instructorId: int
-    enrollmentCount: int
-    status: str
-    createdAt: Optional[datetime] = None
+    name: str
+    imageUrl: str = ""
+    price: int
+    taste: List[str] = []
+    category: str = ""
+    popularity: int = 0
 
 
-class EnrollmentHistoryResponse(BaseModel):
-    userId: int
-    activeCourseIds: List[int]
+class RecommendedFood(BaseModel):
+    """추천 결과 food (Notion API 명세: FoodItem{ id, name, imageUrl, price, taste, category })"""
+    id: int
+    name: str
+    imageUrl: str = ""
+    price: int
+    taste: List[str] = []
+    category: str = ""
+    reason: Optional[str] = None
 
 
 class RecommendResponse(BaseModel):
+    """GET /api/recommend/{user_id}?movie_id= — 추천 응답"""
     userId: int
-    recommendedCourses: List[CourseResponse]
-    basedOnCategory: Optional[CourseCategory] = None
-    message: str
-
-
-class ApiResponse(BaseModel):
-    success: bool
-    message: str
-    data: Optional[dict] = None
+    movieId: int
+    recommendedFoods: List[RecommendedFood]
+    basedOnGenre: str
+    message: Optional[str] = None

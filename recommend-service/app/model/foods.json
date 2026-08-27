@@ -1,0 +1,18 @@
+[
+  {"id": 1, "name": "솔티팝콘", "imageUrl": "https://placehold.co/240x240?text=1", "price": 5000, "taste": ["salty"], "category": "팝콘", "popularity": 95},
+  {"id": 2, "name": "카라멜팝콘", "imageUrl": "https://placehold.co/240x240?text=2", "price": 5500, "taste": ["sweet"], "category": "팝콘", "popularity": 92},
+  {"id": 3, "name": "솔티카라멜팝콘", "imageUrl": "https://placehold.co/240x240?text=3", "price": 5400, "taste": ["salty", "sweet"], "category": "팝콘", "popularity": 88},
+  {"id": 4, "name": "나쵸+치즈", "imageUrl": "https://placehold.co/240x240?text=4", "price": 6000, "taste": ["salty", "fatty"], "category": "스낵", "popularity": 85},
+  {"id": 5, "name": "츄러스", "imageUrl": "https://placehold.co/240x240?text=5", "price": 4500, "taste": ["sweet", "crispy"], "category": "디저트", "popularity": 78},
+  {"id": 6, "name": "핫도그", "imageUrl": "https://placehold.co/240x240?text=6", "price": 5000, "taste": ["savory", "spicy"], "category": "스낵", "popularity": 80},
+  {"id": 7, "name": "초콜릿타코", "imageUrl": "https://placehold.co/240x240?text=7", "price": 5200, "taste": ["sweet", "creamy"], "category": "디저트", "popularity": 70},
+  {"id": 8, "name": "오징어튀김", "imageUrl": "https://placehold.co/240x240?text=8", "price": 5500, "taste": ["savory", "salty"], "category": "스낵", "popularity": 72},
+  {"id": 9, "name": "새우깡", "imageUrl": "https://placehold.co/240x240?text=9", "price": 4000, "taste": ["savory", "salty", "crispy"], "category": "스낵", "popularity": 90},
+  {"id": 10, "name": "매운닭강정", "imageUrl": "https://placehold.co/240x240?text=10", "price": 6500, "taste": ["spicy", "fatty"], "category": "스낵", "popularity": 75},
+  {"id": 11, "name": "요구르트사탕", "imageUrl": "https://placehold.co/240x240?text=11", "price": 3000, "taste": ["sour", "sweet"], "category": "디저트", "popularity": 60},
+  {"id": 12, "name": "감자칩", "imageUrl": "https://placehold.co/240x240?text=12", "price": 4000, "taste": ["salty", "crispy"], "category": "스낵", "popularity": 88},
+  {"id": 13, "name": "크림치즈프레첼", "imageUrl": "https://placehold.co/240x240?text=13", "price": 5000, "taste": ["creamy", "sweet"], "category": "디저트", "popularity": 58},
+  {"id": 14, "name": "카라멜아이스크림", "imageUrl": "https://placehold.co/240x240?text=14", "price": 6000, "taste": ["sweet", "creamy"], "category": "디저트", "popularity": 85},
+  {"id": 15, "name": "사워젤리", "imageUrl": "https://placehold.co/240x240?text=15", "price": 3500, "taste": ["sour", "sweet"], "category": "디저트", "popularity": 55},
+  {"id": 16, "name": "버터갈릭감자", "imageUrl": "https://placehold.co/240x240?text=16", "price": 6000, "taste": ["savory", "fatty", "salty"], "category": "스낵", "popularity": 80}
+]
