@@ -110,6 +110,24 @@ class BookingServiceTest {
     }
 
     @Test
+    void 결제_요청이_예외를_던지면_예매를_취소하고_예외를_전파한다() {
+        when(movieServiceClient.existsMovie(1L)).thenReturn(true);
+        when(movieServiceClient.getPrice(1L)).thenReturn(new BigDecimal("14000.00"));
+        when(writeService.createPendingBooking(eq(1L), eq(1L), eq(1), any()))
+                .thenReturn(Booking.builder()
+                        .id(300L).userId(1L).movieId(1L).quantity(1)
+                        .amount(new BigDecimal("14000.00"))
+                        .build());
+        when(paymentServiceClient.requestPayment(any(), any(), any(), any()))
+                .thenThrow(new RuntimeException("Payment Service 연결 실패"));
+
+        assertThrows(RuntimeException.class, () -> service.book(1L,
+                BookingDto.BookRequest.builder().movieId(1L).quantity(1).build()));
+
+        verify(writeService).cancelBooking(300L);
+    }
+
+    @Test
     void bookingId로_예매를_확정하고_이벤트를_발행한다() {
         Booking booking = Booking.builder()
                 .id(100L).userId(1L).movieId(7L).quantity(2)

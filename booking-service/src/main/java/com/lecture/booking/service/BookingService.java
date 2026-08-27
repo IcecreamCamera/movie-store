@@ -49,8 +49,17 @@ public class BookingService {
 
         Booking booking = bookingWriteService.createPendingBooking(userId, movieId, quantity, amount);
 
-        PaymentServiceClient.PaymentResult result =
-                paymentServiceClient.requestPayment(userId, booking.getId(), movieId, amount);
+        PaymentServiceClient.PaymentResult result;
+        try {
+            result = paymentServiceClient.requestPayment(userId, booking.getId(), movieId, amount);
+        } catch (RuntimeException e) {
+            // createPendingBooking 이 REQUIRES_NEW 로 이미 커밋한 행이므로,
+            // 결제 호출 자체가 실패해도 예매를 되돌려 PENDING 고아 행이 남지 않게 한다.
+            log.error("[BookingService] 결제 요청 실패 - bookingId: {}, error: {}",
+                    booking.getId(), e.getMessage());
+            bookingWriteService.cancelBooking(booking.getId());
+            throw e;
+        }
 
         if (result == null || !"COMPLETED".equals(result.getStatus())) {
             log.warn("[BookingService] 결제 실패 - bookingId: {}, status: {}",
