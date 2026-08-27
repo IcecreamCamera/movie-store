@@ -12,9 +12,9 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -83,11 +83,17 @@ class MovieServiceTest {
 
     @Test
     void 예매수를_증가시킨다() {
-        Movie m = movie();
-        when(movieRepository.findById(1L)).thenReturn(Optional.of(m));
+        when(movieRepository.incrementBookingCount(1L)).thenReturn(1);
 
         service.increaseBookingCount(1L);
 
-        assertEquals(1, m.getBookingCount());
+        verify(movieRepository).incrementBookingCount(1L);
+    }
+
+    @Test
+    void 존재하지_않는_영화의_예매수_증가는_예외를_던진다() {
+        when(movieRepository.incrementBookingCount(999L)).thenReturn(0);
+
+        assertThrows(IllegalArgumentException.class, () -> service.increaseBookingCount(999L));
     }
 }

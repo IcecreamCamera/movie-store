@@ -1,1 +1,10 @@
+pluginManagement {
+    repositories {
+        // Maven Central 이 간헐적으로 429 를 반환한다. Google 미러를 먼저 시도한다.
+        maven { url 'https://maven-central.storage-download.googleapis.com/maven2' }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
 rootProject.name = 'user-service'
