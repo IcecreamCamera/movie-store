@@ -3,7 +3,7 @@ import py_eureka_client.eureka_client as eureka_client
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.config.settings import settings
-from app.kafka.consumer import enrollment_consumer
+from app.kafka.consumer import booking_consumer
 from app.router import recommend_router
 
 logging.basicConfig(
@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
 
     # Kafka Consumer 시작
     try:
-        enrollment_consumer.start()
+        booking_consumer.start()
         logger.info("[Kafka] Consumer 시작 완료")
     except Exception as e:
         logger.warning(f"[Kafka] Consumer 시작 실패: {e}")
@@ -43,13 +43,13 @@ async def lifespan(app: FastAPI):
 
     # 종료 시
     logger.info(f"[{settings.app_name}] 서비스 종료")
-    enrollment_consumer.stop()
+    booking_consumer.stop()
     await eureka_client.stop_async()
 
 
 app = FastAPI(
     title="Recommend Service",
-    description="온라인 강의 플랫폼 - 규칙 기반 강의 추천 서비스",
+    description="영화 장르 기반 간식 추천 서비스",
     version="0.0.1",
     lifespan=lifespan
 )
