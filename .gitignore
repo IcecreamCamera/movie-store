@@ -1,3 +1,4 @@
 infra-images.tar
 docs/superpowers/*
 .env
+.DS_Store
