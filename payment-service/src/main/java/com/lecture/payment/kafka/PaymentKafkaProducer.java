@@ -26,8 +26,8 @@ public class PaymentKafkaProducer {
      * 개발/검증 단계에서는 전송 성공 여부를 즉시 확인하기 위해 동기적으로 기다린다.
      */
     public void publishPaymentCompleted(PaymentCompletedEvent event) {
-        log.info("[Kafka Producer] payment.completed 발행 시도 - topic: {}, paymentId: {}, userId: {}, courseId: {}",
-                paymentCompletedTopic, event.getPaymentId(), event.getUserId(), event.getCourseId());
+        log.info("[Kafka Producer] payment.completed 발행 시도 - topic: {}, paymentId: {}, userId: {}, bookingId: {}, movieId: {}",
+                paymentCompletedTopic, event.getPaymentId(), event.getUserId(), event.getBookingId(), event.getMovieId());
 
         try {
             SendResult<String, Object> result = kafkaTemplate
@@ -40,11 +40,12 @@ public class PaymentKafkaProducer {
                     result.getRecordMetadata().offset());
 
         } catch (Exception e) {
-            log.error("[Kafka Producer] payment.completed 발행 실패 - topic: {}, paymentId: {}, userId: {}, courseId: {}, error: {}",
+            log.error("[Kafka Producer] payment.completed 발행 실패 - topic: {}, paymentId: {}, userId: {}, bookingId: {}, movieId: {}, error: {}",
                     paymentCompletedTopic,
                     event.getPaymentId(),
                     event.getUserId(),
-                    event.getCourseId(),
+                    event.getBookingId(),
+                    event.getMovieId(),
                     e.getMessage(),
                     e);
 
@@ -58,8 +59,9 @@ public class PaymentKafkaProducer {
     @Builder
     public static class PaymentCompletedEvent {
         private Long paymentId;
+        private Long bookingId;
         private Long userId;
-        private Long courseId;
+        private Long movieId;
         private String status;
     }
 }

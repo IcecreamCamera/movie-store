@@ -36,13 +36,14 @@ public class PaymentService {
     public PaymentDto.InternalPaymentResult processInternalPayment(
             PaymentDto.InternalPaymentRequest request) {
 
-        log.info("[PaymentService] 결제 요청 - userId: {}, courseId: {}, amount: {}",
-                request.getUserId(), request.getCourseId(), request.getAmount());
+        log.info("[PaymentService] 결제 요청 - userId: {}, bookingId: {}, movieId: {}, amount: {}",
+                request.getUserId(), request.getBookingId(), request.getMovieId(), request.getAmount());
 
         Payment payment = paymentRepository.save(
                 Payment.builder()
                         .userId(request.getUserId())
-                        .courseId(request.getCourseId())
+                        .bookingId(request.getBookingId())
+                        .movieId(request.getMovieId())
                         .amount(request.getAmount())
                         .build()
         );
@@ -57,8 +58,9 @@ public class PaymentService {
             kafkaProducer.publishPaymentCompleted(
                     PaymentKafkaProducer.PaymentCompletedEvent.builder()
                             .paymentId(payment.getId())
+                            .bookingId(request.getBookingId())
                             .userId(request.getUserId())
-                            .courseId(request.getCourseId())
+                            .movieId(request.getMovieId())
                             .status("COMPLETED")
                             .build()
             );
@@ -73,10 +75,11 @@ public class PaymentService {
         } catch (Exception e) {
             payment.fail();
 
-            log.error("[PaymentService] 결제 실패 - paymentId: {}, userId: {}, courseId: {}, error: {}",
+            log.error("[PaymentService] 결제 실패 - paymentId: {}, userId: {}, bookingId: {}, movieId: {}, error: {}",
                     payment.getId(),
                     request.getUserId(),
-                    request.getCourseId(),
+                    request.getBookingId(),
+                    request.getMovieId(),
                     e.getMessage(),
                     e);
 
