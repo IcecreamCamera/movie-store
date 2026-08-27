@@ -1,0 +1,17 @@
+{
+  "name": "movie-store",
+  "version": "0.0.0",
+  "private": true,
+  "description": "루트에서 프론트엔드를 실행하기 위한 위임 스크립트",
+  "scripts": {
+    "dev": "npm --prefix vue-frontend run dev",
+    "build": "npm --prefix vue-frontend run build",
+    "preview": "npm --prefix vue-frontend run preview",
+    "install:front": "npm --prefix vue-frontend install",
+
+    "dev:demo": "npm --prefix vue_frontend_demo/vue-frontend run dev",
+    "build:demo": "npm --prefix vue_frontend_demo/vue-frontend run build",
+    "preview:demo": "npm --prefix vue_frontend_demo/vue-frontend run preview",
+    "install:demo": "npm --prefix vue_frontend_demo/vue-frontend install"
+  }
+}
