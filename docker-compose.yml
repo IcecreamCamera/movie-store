@@ -155,11 +155,11 @@ services:
     networks:
       - lecture-net
 
-  course-service:
+  movie-service:
     build:
-      context: ./course-service
+      context: ./movie-service
       dockerfile: Dockerfile
-    container_name: lecture-course
+    container_name: lecture-movie
     ports:
       - "8082:8082"
     environment:
@@ -170,6 +170,8 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://auth-server:9000/oauth2/jwks
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://auth-server:9000
+      - KOBIS_API_KEY=${KOBIS_API_KEY}
+      - TMDB_API_KEY=${TMDB_API_KEY}
     depends_on:
       mariadb:
         condition: service_healthy
@@ -180,11 +182,11 @@ services:
     networks:
       - lecture-net
 
-  enrollment-service:
+  booking-service:
     build:
-      context: ./enrollment-service
+      context: ./booking-service
       dockerfile: Dockerfile
-    container_name: lecture-enrollment
+    container_name: lecture-booking
     ports:
       - "8083:8083"
     environment:
@@ -248,8 +250,8 @@ services:
       - EUREKA_INSTANCE_HOST=recommend-service
       - JWT_ISSUER_URI=http://localhost:8080
       - JWK_SET_URI=http://auth-server:9000/oauth2/jwks
-      - ENROLLMENT_SERVICE_URL=http://enrollment-service:8083
-      - COURSE_SERVICE_URL=http://course-service:8082
+      - ENROLLMENT_SERVICE_URL=http://booking-service:8083
+      - MOVIE_SERVICE_URL=http://movie-service:8082
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
       eureka-server:
@@ -258,9 +260,9 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-      enrollment-service:
+      booking-service:
         condition: service_started
-      course-service:
+      movie-service:
         condition: service_started
     networks:
       - lecture-net
@@ -279,9 +281,9 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-      enrollment-service:
+      booking-service:
         condition: service_started
-      course-service:
+      movie-service:
         condition: service_started
     networks:
       - lecture-net
