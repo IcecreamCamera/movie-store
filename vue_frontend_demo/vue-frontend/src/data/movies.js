@@ -22,6 +22,7 @@ export const featuredMovie = {
   director: '이정범',
   actors: '장동건, 김민희, 박성웅',
   poster: POSTERS[0],
+  backdrop: POSTERS[0],
   year: 2024,
   genre: '액션/드라마',
   rating: 8.7,
@@ -91,13 +92,19 @@ function seeded(seed) {
 
 export const allMovies = MOVIE_DATA.map((m, i) => {
   const rand = seeded(i + 1)
+  const year = 2000 + Math.floor(rand() * 25)
   return {
     id: `movie-${i}`,
     title: m.title,
     director: m.director,
     actors: m.actors,
-    poster: POSTERS[i % POSTERS.length],
-    year: 2000 + Math.floor(rand() * 25),
+    // poster  : 카드·목록용 2:3 세로 이미지. 목데이터 사진이 5장뿐이라 편마다
+    //           다른 그림이 나오도록 seed 기반 사진을 쓴다.
+    //           백엔드 연동 시 movies.poster_url(TMDB)로 교체.
+    // backdrop: 히어로처럼 가로로 넓게 쓰는 자리. 기존 사진을 그대로 쓴다.
+    poster: `https://picsum.photos/seed/odok-${i}/400/600`,
+    backdrop: POSTERS[i % POSTERS.length],
+    year,
     genre: GENRES[Math.floor(rand() * GENRES.length)],
     rating: 7.0 + rand() * 2.5,
     runtime: 90 + Math.floor(rand() * 60),
