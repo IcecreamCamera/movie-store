@@ -42,7 +42,7 @@
               </div>
               <div class="flex justify-start">
                 <BaseButton
-                  class="bg-brand text-[#1A1408] hover:bg-brand-hover px-12 py-4 text-xl font-semibold shadow-lg h-auto"
+                  class="bg-white text-black hover:bg-white/90 px-12 py-4 text-xl font-semibold shadow-lg h-auto"
                   @click.stop="openMovie(featuredMovie)"
                 >
                   <Info class="h-6 w-6 mr-3" />
@@ -246,14 +246,15 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { Star, Info, ChevronRight } from '@lucide/vue'
+import { Star, Info, ChevronRight, MessageSquare } from '@lucide/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
+import HeroCarousel from '@/components/HeroCarousel.vue'
 import ImageWithFallback from '@/components/ImageWithFallback.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import {
-  featuredMovie,
+  featuredMovies,
   personalizedTopMovies,
   latestMovies,
   topMovies
