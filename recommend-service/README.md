@@ -3,7 +3,7 @@
 영화 장르 기반 **음식(food) 추천** 서비스입니다. movie-store MSA에서 `movie_id`(영화)를 받아, 해당 영화의 장르에 어울리는 매점 간식을 추천합니다.
 
 - 스택: **FastAPI** (Python 3.12, uvicorn)
-- 이벤트 소비: **Apache Kafka** (`enrollment.completed` → 사용자 이용 맥락)
+- 이벤트 소비: **Apache Kafka** (`booking.completed` → 사용자 이용 맥락)
 - 추천 근거: **논문 기반 knowledge-based prior** + **LLM context injection** (DeepSeek)
 
 ---
@@ -23,7 +23,7 @@
       ▶ 최종 응답: { recommendedFoods[], basedOnGenre, message }
 ```
 
-`enrollment.completed` (Kafka) 를 영화 이용 이벤트로 해석해, 사용자의 최근 이용 영화 맥락을 프롬프트에 주입합니다.
+`booking.completed` (Kafka) 를 영화 이용 이벤트로 해석해, 사용자의 최근 이용 영화 맥락을 프롬프트에 주입합니다.
 
 ---
 
@@ -104,7 +104,7 @@ score = |snack.taste ∩ GENRE_TASTE_MAP[genre]| * 2 + popularity * 0.1
 | `LLM_MODEL` | 모델명 | `deepseek-chat` |
 | `LLM_MAX_SNACKS` / `LLM_MAX_TOKENS` | 추천 개수 / 토큰 상한 | `3` / `2048` |
 | `DEFAULT_MOVIE_GENRE` | 장르 해석 실패 시 폴백 | `DRAMA` |
-| `KAFKA_*` | `enrollment.completed` 소비자 설정 | — |
+| `KAFKA_*` | `booking.completed` 소비자 설정 | — |
 | `EUREKA_*` / `JWT_*` | 등록/검증 | — |
 
 > `.env`는 git에서 제외됩니다 (`recommend-service/.gitignore`). 배포 시 `LLM_API_KEY`를 환경변수로 주입해야 LLM 추천이 활성화됩니다.
@@ -162,7 +162,7 @@ recommend-service/
 │   │   ├── settings.py        # 설정(env)
 │   │   └── security.py        # JWT 검증 (verify_token)
 │   ├── client/movie_client.py # movie-service → genre 조회
-│   ├── kafka/consumer.py      # enrollment.completed → 이용 맥락 저장
+│   ├── kafka/consumer.py      # booking.completed → 이용 맥락 저장
 │   ├── llm/
 │   │   ├── client.py          # OpenAI-compatible chat (DeepSeek) + JSON 파서
 │   │   └── prompt.py          # context injection 프롬프트 + 논문 근거

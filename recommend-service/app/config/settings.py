@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # Kafka
     kafka_bootstrap_servers: str = "localhost:9092"
     kafka_consumer_group_id: str = "recommend-service"
-    kafka_topic_enrollment_completed: str = "enrollment.completed"
+    kafka_topic_booking_completed: str = "booking.completed"
 
     # LLM (OpenAI-compatible) - 추천 알고리즘 context injection
     llm_api_key: str = ""
