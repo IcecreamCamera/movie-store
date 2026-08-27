@@ -32,18 +32,20 @@ export function exchangeCode(code) {
 // Spring Security의 폼 로그인 필터는 application/x-www-form-urlencoded 바디의
 // username/password 파라미터만 읽으며, 필드명은 이메일을 담더라도 반드시 "username"이어야 한다.
 //
-// 브라우저는 302 리다이렉트를 투명하게 따라가고 Location 헤더를 JS에 노출하지 않으므로,
-// 여기서는 리다이렉트 목적지를 읽으려 하지 않는다. "세션 쿠키가 생겼는지 여부"만이 이 함수가
-// 확정적으로 알 수 있는 사실이며, 나머지 판단(성공/실패)은 이어지는 authorize 단계에 맡긴다.
+// 상대 경로(/login)로 요청한다: nginx가 이 경로를 api-gateway로 프록시해 프론트(:3000)와
+// 동일 출처를 유지하기 때문에, 302 리다이렉트 체인을 브라우저가 따라가는 동안에도
+// Origin이 null이 되어 CORS에 막히는 일이 없다. 이 덕분에 체인의 최종 URL
+// (response.request.responseURL)을 읽어 성공/실패를 판정할 수 있다 - 판정은 호출부(store)에서 한다.
+//
+// maxRedirects/validateStatus는 Node용 axios 옵션이라 브라우저에서는 아무 효과가 없으므로
+// 지정하지 않는다 - 브라우저가 302 체인을 정상적으로 따라가게 둔다.
 export function loginWithPassword(email, password) {
   return axios.post(
-    `${API_BASE_URL}/login`,
+    '/login',
     new URLSearchParams({ username: email, password }).toString(),
     {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      withCredentials: true,
-      maxRedirects: 0,
-      validateStatus: (s) => s === 302 || s === 200 || s === 401 || s === 403
+      withCredentials: true
     }
   )
 }

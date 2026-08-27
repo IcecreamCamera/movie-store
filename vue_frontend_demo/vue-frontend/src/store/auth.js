@@ -12,7 +12,6 @@ import { TOKEN_KEY, USER_KEY } from '@/api/index.js'
 // 그 외 에러(네트워크 문제 등)는 그대로 전파한다.
 export class CredentialError extends Error {}
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 const CLIENT_ID = import.meta.env.VITE_CLIENT_ID
 const REDIRECT_URI = import.meta.env.VITE_REDIRECT_URI
 
@@ -42,10 +41,12 @@ function setUser(userData) {
   sessionStorage.setItem(USER_KEY, JSON.stringify(userData))
 }
 
-// authorize 요청 URL 구성. 이 값들은 auth-server에 등록된 client와 정확히 일치해야
-// 하므로 .env 밖에서 바꾸면 안 된다. startLogin()과 loginAndAuthorize() 둘 다 이 URL로
-// 이동시킨다 - 인가 코드 발급 방식 자체는 동일하고, 그 전에 세션(JSESSIONID)을 앱 화면에서
-// 만드느냐 auth-server의 호스팅된 로그인 화면에서 만드느냐만 다르다.
+// authorize 요청 URL 구성. redirect_uri(REDIRECT_URI)는 auth-server에 등록된 client와
+// 정확히 일치해야 하므로 절대 URL(.env의 VITE_REDIRECT_URI) 그대로 둔다. 반면 요청을 보내는
+// 경로 자체는 상대 경로로 둬서 nginx가 프론트(:3000)와 동일 출처로 프록시하게 한다.
+// startLogin()과 loginAndAuthorize() 둘 다 이 URL로 이동시킨다 - 인가 코드 발급 방식 자체는
+// 동일하고, 그 전에 세션(JSESSIONID)을 앱 화면에서 만드느냐 auth-server의 호스팅된 로그인
+// 화면에서 만드느냐만 다르다.
 function buildAuthorizeUrl() {
   const params = new URLSearchParams({
     response_type: 'code',
@@ -53,7 +54,7 @@ function buildAuthorizeUrl() {
     redirect_uri: REDIRECT_URI,
     scope: 'openid'
   })
-  return `${API_BASE_URL}/oauth2/authorize?${params.toString()}`
+  return `/oauth2/authorize?${params.toString()}`
 }
 
 // auth-server의 인가 코드 흐름 시작 (호스팅된 로그인 화면으로 이동). 지금은 LoginView가
@@ -65,30 +66,22 @@ export function startLogin() {
 // 앱 페이지에서 이메일/비밀번호를 받아 auth-server(:8080)에 폼 로그인으로 세션을 만들고,
 // 곧바로 authorize 엔드포인트로 이동해 인가 코드를 발급받는다(콜백에서 completeLogin이 처리).
 //
-// 자격증명 실패를 감지하는 방법: OAuth 2.1에는 패스워드 그랜트가 없고, 브라우저는 로그인
-// 302 응답의 Location(/login?error 여부)을 읽을 수 없다. auth-server의 /userinfo가 세션
-// 쿠키만으로 인증 여부를 구분해주면 이를 프리플라이트 삼아 판정할 수 있을지 확인했지만,
-// /userinfo는 세션 쿠키가 아니라 Bearer 액세스 토큰을 요구하는 OIDC 엔드포인트라
-// (WWW-Authenticate: Bearer, 세션 유무와 무관하게 401) 세션 유효성 판정에 쓸 수 없었다.
-// 따라서 더 단순한 규칙으로 대체한다: 로그인 POST 자체가 401/403을 반환하면 자격증명 실패로
-// 간주하고, 그 외의 경우(200/302 또는 브라우저가 리다이렉트를 따라가며 발생시키는 CORS성
-// 네트워크 에러 포함)는 세션이 만들어졌다고 보고 authorize로 진행시켜 결과를 맡긴다.
+// 자격증명 실패를 감지하는 방법: 로그인 성공/실패 모두 302로 응답하므로(401/403은 오지 않는다)
+// 상태 코드로는 구분할 수 없다. auth-server의 /userinfo도 세션 쿠키가 아니라 Bearer 액세스
+// 토큰을 요구하는 OIDC 엔드포인트라(WWW-Authenticate: Bearer, 세션 유무와 무관하게 401)
+// 세션 유효성 판정에 쓸 수 없다. 대신 브라우저가 302 체인을 다 따라간 뒤 최종적으로 도달한
+// URL(response.request.responseURL)을 읽는다 - 실패 시 .../login?error로, 성공 시
+// 프론트 콜백(.../callback?code=...)으로 끝난다. 이 값을 JS가 읽으려면 체인 전체가
+// 동일 출처여야 하므로(nginx가 /login, /oauth2 등을 프록시), 이 함수는 상대 경로로만 호출한다.
+//
+// responseURL이 비어 있거나 읽을 수 없으면 추측하지 않고 authorize로 진행시킨다 - 정상
+// 로그인을 "비밀번호 오류"로 잘못 판정하는 것이 이전의 미탐지보다 더 나쁘다.
 export async function loginAndAuthorize(email, password) {
-  try {
-    const res = await loginWithPassword(email, password)
-    if (res?.status === 401 || res?.status === 403) {
-      throw new CredentialError('이메일 또는 비밀번호가 올바르지 않습니다.')
-    }
-  } catch (err) {
-    if (err instanceof CredentialError) {
-      throw err
-    }
-    const status = err?.response?.status
-    if (status === 401 || status === 403) {
-      throw new CredentialError('이메일 또는 비밀번호가 올바르지 않습니다.')
-    }
-    // 그 외 에러(예: 브라우저가 302를 따라가다 CORS 때문에 응답을 읽지 못해 던지는
-    // 네트워크 에러)는 자격증명 실패로 단정할 근거가 없으므로 무시하고 진행한다.
+  const res = await loginWithPassword(email, password)
+  const finalUrl = res?.request?.responseURL || ''
+
+  if (finalUrl.includes('login?error') || finalUrl.includes('error=')) {
+    throw new CredentialError('이메일 또는 비밀번호가 올바르지 않습니다.')
   }
 
   window.location.href = buildAuthorizeUrl()
