@@ -1,0 +1,11 @@
+pluginManagement {
+    repositories {
+        // Maven Central 이 간헐적으로 429 를 반환한다.
+        // Google 이 운영하는 Maven Central 공식 미러를 먼저 시도하고, 실패 시 기본 저장소로 폴백한다.
+        maven { url 'https://maven-central.storage-download.googleapis.com/maven2' }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'api-gateway'
