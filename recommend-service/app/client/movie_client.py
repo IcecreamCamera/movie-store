@@ -28,10 +28,13 @@ class MovieServiceClient:
             logger.warning(f"[MovieClient] 영화 조회 실패 - movieId: {movie_id}, error: {e}")
             return None
 
+        # 래퍼(wrapped, ApiResponse.data) / 언래퍼 응답 모두 대응
+        genre = data.get("genre") if isinstance(data, dict) else None
+        if not genre and isinstance(data.get("data"), dict):
+            genre = data["data"].get("genre")
         if isinstance(genre, str):
             return genre.strip().upper()
         return None
-        return genre
 
 
 movie_client = MovieServiceClient()
