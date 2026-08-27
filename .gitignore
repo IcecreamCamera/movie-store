@@ -1,1 +1,14 @@
 infra-images.tar
+
+# macOS
+.DS_Store
+
+# Gradle / Java 빌드 산출물
+bin/
+build/
+.gradle/
+*.class
+
+# Node
+node_modules/
+dist/
