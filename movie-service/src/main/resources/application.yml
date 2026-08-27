@@ -45,3 +45,13 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+openapi:
+  kobis:
+    base-url: http://www.kobis.or.kr/kobisopenapi/webservice/rest
+    key: ${KOBIS_API_KEY:}
+  tmdb:
+    base-url: https://api.themoviedb.org/3
+    image-base-url: https://image.tmdb.org/t/p/w500
+    key: ${TMDB_API_KEY:}
+    language: ko-KR
