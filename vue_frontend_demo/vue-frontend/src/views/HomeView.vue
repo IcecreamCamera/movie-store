@@ -160,37 +160,6 @@
             </div>
           </div>
         </div>
-
-        <!-- 4. 매점 간식 추천 (데이터 연동 전 자리) -->
-        <!-- id: /#snacks 로 들어오면 이 섹션으로 스크롤된다 (헤더 '간식추천'은 전용 페이지 /snacks 로 감) -->
-        <div id="snacks" class="scroll-mt-24">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl lg:text-2xl font-medium text-dim">오늘의 간식 추천</h2>
-            <BaseBadge class="border-brand/40 bg-brand-dim text-brand">데이터 연동 예정</BaseBadge>
-          </div>
-          <div class="w-full h-px bg-hairline mb-6"></div>
-
-          <div class="rounded-xl bg-surface border border-hairline p-6">
-            <p class="text-dim mb-6">
-              예매하신 영화의 <span class="text-brand">장르</span>에 맞춰 매점 간식을 골라드립니다.
-            </p>
-
-            <!-- 간식 카드 -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div
-                v-for="snack in snackRecommendations"
-                :key="snack.id"
-                class="rounded-lg bg-surface-2 border border-hairline p-4 flex flex-col gap-3"
-              >
-                <div class="flex items-center justify-between gap-2">
-                  <span class="font-semibold text-foreground">{{ snack.name }}</span>
-                  <span class="shrink-0 rounded px-2 py-0.5 text-xs bg-brand-dim text-brand">{{ snack.taste }}</span>
-                </div>
-                <div class="mt-auto text-sm text-brand">{{ snack.price.toLocaleString() }}원</div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </main>
 
@@ -214,7 +183,6 @@ import {
   latestMovies,
   topMovies
 } from '@/data/movies'
-import { snackRecommendations } from '@/data/snacks'
 
 const router = useRouter()
 

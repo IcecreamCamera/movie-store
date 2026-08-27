@@ -317,11 +317,15 @@
     <!-- 공통 푸터 -->
     <AppFooter />
 
-    <!-- 예매 완료 + 장르 기반 간식 추천 -->
+    <!-- 간식 고르기 → 합산 결제 → 예매 완료 -->
     <BookingDialog
       :open="bookingOpen"
+      :movie="movie"
+      :quantity="quantity"
+      :ticket-amount="amount"
       :booking="booked"
-      @close="bookingOpen = false"
+      @confirm="confirmBooking"
+      @close="closeBooking"
     />
   </div>
 </template>
@@ -378,16 +382,27 @@ const amount = computed(() => TICKET_PRICE * quantity.value)
 // 다른 영화로 이동하면 매수를 초기화한다.
 watch(() => route.params.id, () => { quantity.value = 1 })
 
+// 예매하기를 누르면 바로 결제하지 않고, 먼저 간식 추천 단계를 띄운다.
 function book() {
-  // TODO: POST /api/bookings { movieId, quantity } 로 교체.
-  // 백엔드 흐름: 영화 확인 → 결제 요청 → payment.completed 수신 → 예매 확정.
-  // 지금은 성공했다고 보고 내역에 기록한 뒤 완료 모달을 띄운다.
+  booked.value = null
+  bookingOpen.value = true
+}
+
+// 간식을 고르고 결제하거나('안 살래요' 포함) 하면 그때 예매가 확정된다.
+// TODO: POST /api/bookings { movieId, quantity, snacks } 로 교체.
+// 백엔드 흐름: 영화 확인 → 결제 요청 → payment.completed 수신 → 예매 확정.
+function confirmBooking(snacks) {
   booked.value = addBooking({
     movie: movie.value,
     quantity: quantity.value,
-    amount: amount.value
+    amount: amount.value,
+    snacks
   })
-  bookingOpen.value = true
+}
+
+function closeBooking() {
+  bookingOpen.value = false
+  booked.value = null
 }
 
 const DEFAULT_PLOT =

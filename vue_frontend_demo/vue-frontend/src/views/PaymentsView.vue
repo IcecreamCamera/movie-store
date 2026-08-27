@@ -57,6 +57,13 @@
               <dd class="text-dim">{{ item.genre }}</dd>
               <dt class="text-faint">매수</dt>
               <dd class="text-dim">{{ item.quantity }}매</dd>
+              <template v-if="item.snacks?.length">
+                <dt class="text-faint">간식</dt>
+                <dd class="text-dim">
+                  {{ snackSummary(item.snacks) }}
+                  <span class="text-faint">· {{ item.snackAmount.toLocaleString() }}원</span>
+                </dd>
+              </template>
               <dt class="text-faint">결제 수단</dt>
               <dd class="text-dim">{{ item.payment.method }}</dd>
               <dt class="text-faint">거래번호</dt>
@@ -89,6 +96,11 @@ const router = useRouter()
 
 // TODO: GET /api/bookings/my + GET /api/payments/user/{userId} 로 교체.
 const items = bookings
+
+// 템플릿에서 v-for로 이어붙이면 개행이 공백으로 접혀 "핫도그 2개 , 나쵸"처럼 된다.
+function snackSummary(list) {
+  return list.map((s) => `${s.name} ${s.quantity}개`).join(', ')
+}
 
 function formatDate(d) {
   return new Intl.DateTimeFormat('ko-KR', {

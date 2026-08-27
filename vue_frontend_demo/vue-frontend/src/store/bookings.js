@@ -20,10 +20,24 @@ let seq = 0
  * 예매 1건을 기록합니다.
  * 백엔드에서는 예매 생성 → 결제 요청 → payment.completed 수신 순으로 진행되고,
  * 결제가 끝나야 예매가 CONFIRMED 됩니다. 여기서는 모의 결제라 즉시 완료로 둡니다.
+ *
+ * ticketAmount는 영화 금액, snacks는 매점에서 함께 고른 간식입니다.
+ * 결제 금액은 둘을 합친 값입니다.
  */
-export function addBooking({ movie, quantity, amount }) {
+export function addBooking({ movie, quantity, amount, snacks = [] }) {
   seq += 1
   const now = new Date()
+
+  const snackItems = snacks.map((s) => ({
+    id: s.id,
+    name: s.name,
+    taste: s.taste,
+    price: s.price,
+    quantity: s.quantity ?? 1
+  }))
+  const snackAmount = snackItems.reduce((sum, s) => sum + s.price * s.quantity, 0)
+  const totalAmount = amount + snackAmount
+
   const item = {
     bookingId: seq,
     bookingNo: `B${String(now.getFullYear()).slice(2)}${String(seq).padStart(4, '0')}`,
@@ -31,13 +45,16 @@ export function addBooking({ movie, quantity, amount }) {
     movieTitle: movie?.title ?? '',
     genre: movie?.genre ?? '',
     quantity,
-    amount,
+    ticketAmount: amount,
+    snacks: snackItems,
+    snackAmount,
+    amount: totalAmount,
     status: 'CONFIRMED',
     payment: {
       paymentId: seq,
       // 백엔드는 UUID를 발급합니다 (payments.transaction_id).
       transactionId: `${now.getTime().toString(36)}-${seq}`.toUpperCase(),
-      amount,
+      amount: totalAmount,
       status: 'COMPLETED',
       method: '간편결제 (모의)',
       paidAt: now

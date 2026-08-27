@@ -61,7 +61,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { Search, Bell, User } from '@lucide/vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
-import { scrollToSection } from '@/router'
 
 const props = defineProps({
   // 'home' | 'ranking' | 'movie-detail'
@@ -85,8 +84,6 @@ function isActive(key) {
   return props.currentPage === key
 }
 
-// 간식 추천은 전용 페이지(/snacks)로 간다.
-// ROUTES 값에 해시를 주면(예: { path: '/', hash: '#snacks' }) 그 섹션으로 스크롤한다.
 const ROUTES = {
   home: '/',
   booking: '/booking',
@@ -98,11 +95,9 @@ function go(key) {
   const target = ROUTES[key]
   if (!target) return
 
-  // 이미 같은 위치면 라우터가 스크롤을 트리거하지 않으므로 직접 옮긴다.
-  const resolved = router.resolve(target)
-  if (resolved.fullPath === route.fullPath) {
-    if (resolved.hash) scrollToSection(resolved.hash)
-    else window.scrollTo({ top: 0, behavior: 'smooth' })
+  // 이미 같은 화면이면 라우터가 아무것도 하지 않으므로 맨 위로 올려준다.
+  if (router.resolve(target).fullPath === route.fullPath) {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
 
